@@ -14,16 +14,14 @@ Authentication & Authorization
 
 Super Admins
 
-❌ can CRUD all users
+✅ can CRUD all users
 ❌ can view system audit logs
 ❌ can reset any user's password
 ❌ can configure store settings (tax rates, store name, currency)
 
 Admins
 
-❌ can CRUD cashiers and admins
-❌ can CRUD product categories
-❌ can CRUD products
+❌ can only CRUD cashiers and admins
 ❌ can view all orders (filtered by date/cashier)
 ❌ can void/cancel orders (with reason)
 ❌ can generate sales reports (daily/weekly/monthly)
@@ -49,6 +47,7 @@ Order Management
 
 Product Management
 
+❌ Product categories CRUD
 ❌ Product CRUD with name, price, SKU, category, stock (urgent - data foundation)
 ❌ Stock tracking (deduct on sale) (urgent)
 ❌ Low stock alerts (when < 5 items)
