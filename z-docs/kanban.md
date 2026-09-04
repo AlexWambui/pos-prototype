@@ -8,7 +8,7 @@
 Authentication & Authorization
 
 ✅ Email and password authentication
-❌ Role-based access control (Super Admin, Admin, Cashier) (urgent - blocks UI)
+✅ Role-based access control (Super Admin, Admin, Cashier) (urgent - blocks UI)
 ✅ Login/Logout functionality
 ❌ Session timeout after 30 mins of inactivity
 
