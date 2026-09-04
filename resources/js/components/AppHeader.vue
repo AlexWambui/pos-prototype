@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Link, usePage } from '@inertiajs/vue3';
-import { BookOpen, Folder, LayoutGrid, Menu, Search } from '@lucide/vue';
+import { BookOpen, LayoutGrid, Menu, Users, PhoneCall, Barcode, TruckElectric, Clipboard, BanknoteArrowDown } from '@lucide/vue';
 import { computed } from 'vue';
 import AppLogo from '@/components/AppLogo.vue';
 import AppLogoIcon from '@/components/AppLogoIcon.vue';
@@ -36,6 +36,7 @@ import { useCurrentUrl } from '@/composables/useCurrentUrl';
 import { getInitials } from '@/composables/useInitials';
 import { toUrl } from '@/lib/utils';
 import { dashboard } from '@/routes';
+import userRoutes from '@/routes/users';
 import type { BreadcrumbItem, NavItem } from '@/types';
 
 type Props = {
@@ -46,39 +47,99 @@ const props = withDefaults(defineProps<Props>(), {
     breadcrumbs: () => [],
 });
 
+const activeItemStyles =
+    'text-neutral-900 dark:bg-neutral-800 dark:text-neutral-100';
+
 const page = usePage();
 const auth = computed(() => page.props.auth);
 const { isCurrentUrl, whenCurrentUrl } = useCurrentUrl();
 
-const activeItemStyles =
-    'text-neutral-900 dark:bg-neutral-800 dark:text-neutral-100';
+const user = computed(() => page.props.auth.user);
+const isAdmin = computed(() => user.value?.role_label === 'Admin');
+const isSuperAdmin = computed(() => user.value?.role_label === 'Super Admin');
+const isCashier = computed(() => user.value?.role_label === 'Cashier');
 
-const mainNavItems: NavItem[] = [
-    {
-        title: 'Dashboard',
-        href: dashboard(),
-        icon: LayoutGrid,
-    },
-];
+const mainNavItems = computed(() => {
+    const items = [
+        {
+            title: 'Dashboard',
+            href: dashboard(),
+            icon: LayoutGrid,
+        },
+    ];
+
+    if (isSuperAdmin.value || isAdmin.value) {
+        items.push(
+            {
+                title: 'Orders',
+                href: userRoutes.index(), // TODO: correct this route
+                icon: Clipboard,
+            },
+            {
+                title: 'Products',
+                href: userRoutes.index(), // TODO: correct this route
+                icon: Barcode,
+            },
+            {
+                title: 'Expenses',
+                href: userRoutes.index(), // TODO: correct this route
+                icon: BanknoteArrowDown,
+            },
+            {
+                title: 'Deliveries',
+                href: userRoutes.index(), // TODO: correct this route
+                icon: TruckElectric,
+            },
+            {
+                title: 'Users',
+                href: userRoutes.index(),
+                icon: Users
+            },
+            {
+                title: 'Callbacks',
+                href: userRoutes.index(), // TODO: correct this route
+                icon: PhoneCall,
+            },
+        );
+    }
+
+    if (isCashier.value) {
+        items.push(
+            {
+                title: 'Products',
+                href: userRoutes.index(), // TODO: correct this route
+                icon: Barcode,
+            },
+        );
+    }
+
+    return items;
+});
 
 const rightNavItems: NavItem[] = [
     {
-        title: 'Repository',
-        href: 'https://github.com/laravel/vue-starter-kit',
-        icon: Folder,
-    },
-    {
-        title: 'Documentation',
-        href: 'https://laravel.com/docs/starter-kits#vue',
+        title: 'Docs',
+        href: '/',
         icon: BookOpen,
     },
+
+    // {
+    //     title: 'Repository',
+    //     href: 'https://github.com/laravel/vue-starter-kit',
+    //     icon: Folder,
+    // },
+    // {
+    //     title: 'Documentation',
+    //     href: 'https://laravel.com/docs/starter-kits#vue',
+    //     icon: BookOpen,
+    // },
 ];
 </script>
 
 <template>
     <div>
         <div class="border-sidebar-border/80 border-b">
-            <div class="mx-auto flex h-16 items-center px-4 md:max-w-7xl">
+            <div class="mx-auto flex h-16 items-center px-4 lg:px-16">
                 <!-- Mobile Menu -->
                 <div class="lg:hidden">
                     <Sheet>
@@ -91,7 +152,7 @@ const rightNavItems: NavItem[] = [
                                 <Menu class="h-5 w-5" />
                             </Button>
                         </SheetTrigger>
-                        <SheetContent side="left" class="w-[300px] p-6">
+                        <SheetContent side="left" class="w-75 p-6">
                             <SheetTitle class="sr-only"
                                 >Navigation menu</SheetTitle
                             >
