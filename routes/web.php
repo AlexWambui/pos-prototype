@@ -2,10 +2,16 @@
 
 use Illuminate\Support\Facades\Route;
 
-Route::inertia('/', 'Welcome')->name('home');
+use Modules\Dashboard\Http\Controllers\DashboardController;
+
+Route::get('/', function() {
+    return redirect()->route('login');
+})->name('home');
+
+Route::inertia('/welcome', 'Welcome')->name('welcome');
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::inertia('dashboard', 'Dashboard')->name('dashboard');
+    Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
 });
 
 require __DIR__.'/settings.php';
