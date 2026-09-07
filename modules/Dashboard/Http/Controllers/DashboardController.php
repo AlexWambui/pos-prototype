@@ -29,11 +29,11 @@ class DashboardController extends Controller
                     'total_admins' => User::where('role', '=', UserRoles::ADMIN)->count(),
                     'total_cashiers' => User::where('role', '=', UserRoles::CASHIER)->count(),
 
-                    // 'total_products' => Product::count(),
-                    // 'total_product_categories' => ProductCategory::count(),
+                    'total_products' => Product::count(),
+                    'total_product_categories' => ProductCategory::count(),
 
-                    // 'total_orders' => Order::count(),
-                    // 'orders_need_attention' => Order::where('order_status', OrderStatusEnum::PENDING->value)->whereColumn('amount_paid', '>=', 'total_selling_price')->count(),
+                    'total_orders' => Order::count(),
+                    'orders_need_attention' => Order::where('order_status', OrderStatusEnum::PENDING->value)->whereColumn('amount_paid', '>=', 'total_selling_price')->count(),
 
                     // 'total_delivery_locations' => DeliveryLocation::count(),
                     // 'total_delivery_areas' => DeliveryArea::count(),
@@ -52,11 +52,11 @@ class DashboardController extends Controller
                     'total_admins' => User::where('role', '=', UserRoles::ADMIN)->count(),
                     'total_cashiers' => User::where('role', '=', UserRoles::CASHIER)->count(),
 
-                    // 'total_products' => Product::count(),
-                    // 'total_product_categories' => ProductCategory::count(),
+                    'total_products' => Product::count(),
+                    'total_product_categories' => ProductCategory::count(),
 
-                    // 'total_orders' => Order::count(),
-                    // 'orders_need_attention' => Order::needsAttention()->count(),
+                    'total_orders' => Order::count(),
+                    'orders_need_attention' => Order::needsAttention()->count(),
 
                     // 'total_delivery_locations' => DeliveryLocation::count(),
                     // 'total_delivery_areas' => DeliveryArea::count(),
@@ -71,8 +71,8 @@ class DashboardController extends Controller
             return inertia('app/dashboards/Cashier', [
                 'user' => $user,
                 'stats' => [
-                    // 'total_products' => Product::where('is_active', true)->count(),
-                    // 'total_product_categories' => ProductCategory::where('is_active', true)->count(),
+                    'total_products' => Product::where('is_active', true)->count(),
+                    'total_product_categories' => ProductCategory::where('is_active', true)->count(),
                 ]
             ]);
         }
