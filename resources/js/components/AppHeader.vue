@@ -67,10 +67,10 @@ const mainNavItems = computed(() => {
             title: 'Dashboard',
             href: dashboard(),
             icon: LayoutGrid,
-        },
+        }
     ];
 
-    if (isSuperAdmin.value || isAdmin.value) {
+    if (isSuperAdmin.value || isAdmin.value || isCashier.value) {
         items.push(
             {
                 title: 'Orders',
@@ -81,22 +81,23 @@ const mainNavItems = computed(() => {
                 title: 'Products',
                 href: productRoutes.index(),
                 icon: Barcode,
-            },
+            }
+        );
+    }
+
+    if (isSuperAdmin.value || isAdmin.value) {
+        items.push(
             {
                 title: 'Users',
                 href: userRoutes.index(),
                 icon: Users
             },
-        );
+        )
     }
 
     if (isCashier.value) {
         items.push(
-            {
-                title: 'Products',
-                href: productRoutes.index(),
-                icon: Barcode,
-            },
+            //
         );
     }
 
