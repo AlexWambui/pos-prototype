@@ -11,6 +11,8 @@ class SupportServiceProvider extends ServiceProvider
     {
         $this->app->register(\Modules\User\Providers\UserServiceProvider::class);
         $this->app->register(\Modules\Product\Providers\ProductServiceProvider::class);
+        $this->app->register(\Modules\Order\Providers\OrderServiceProvider::class);
+        $this->app->register(\Modules\Payment\Providers\PaymentServiceProvider::class);
     }
 
     public function boot(Router $router): void
