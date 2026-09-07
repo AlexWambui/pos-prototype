@@ -47,9 +47,10 @@ Order Management
 
 Product Management
 
-❌ Product categories CRUD
-❌ Product CRUD with name, price, SKU, category, stock (urgent - data foundation)
+✅ Product categories CRUD
+✅ Product CRUD with name, price, SKU, category (urgent - data foundation)
 ❌ Stock tracking (deduct on sale) (urgent)
+❌ Inventory / stock management
 ❌ Low stock alerts (when < 5 items)
 ❌ Bulk import/export (CSV)
 
