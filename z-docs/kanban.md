@@ -22,23 +22,25 @@ Super Admins
 Admins
 
 ❌ can only CRUD cashiers and admins
-❌ can view all orders (filtered by date/cashier)
+✅ can view all orders
+❌ can filter orders by date / cashier
 ❌ can void/cancel orders (with reason)
 ❌ can generate sales reports (daily/weekly/monthly)
 ❌ can manage discounts/promotions (CRUD)
 
 Cashiers
 
-❌ can add products to cart and checkout to create an order (urgent - core MVP)
-❌ can R products (view product list with search/filter) (urgent - core MVP)
+✅ can add products to cart and checkout to create an order (urgent - core MVP)
+✅ can R products (view product list with search/filter) (urgent - core MVP)
 ❌ can view order history (their own transactions)
-❌ can process returns/exchanges (with manager override for >$50)
+❌ can process returns/exchanges (with manager override for > $50)
 ❌ can apply discounts to cart (up to 10% without approval)
 ❌ can suspend/resume carts for later
 ❌ can print receipt (or generate PDF)
 
 Order Management
 
+❌ Order quantity adjustment in the create order page
 ❌ Order creation with line items, subtotal, tax, total (urgent)
 ❌ Payment processing (Cash, Card, QR) (urgent)
 ❌ Order status tracking (pending, paid, voided, refunded)
