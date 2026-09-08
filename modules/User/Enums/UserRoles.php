@@ -30,6 +30,23 @@ enum UserRoles: int
         return $labels;
     }
 
+    public static function adminLabels(): array
+    {
+        return [
+            self::CUSTOMER->value => self::CUSTOMER->label(),
+            self::ADMIN->value => self::ADMIN->label(),
+        ];
+    }
+
+    public static function superAdminLabels(): array
+    {
+        return [
+            self::SUPER_ADMIN->value => self::SUPER_ADMIN->label(),
+            self::ADMIN->value => self::ADMIN->label(),
+            self::CUSTOMER->value => self::CUSTOMER->label(),
+        ];
+    }
+
     public static function tryFromLabel(string $label): ?self
     {
         foreach (self::cases() as $role) {
