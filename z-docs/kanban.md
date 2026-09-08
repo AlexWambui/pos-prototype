@@ -21,15 +21,23 @@ Super Admins
 
 Admins
 
-❌ can only CRUD cashiers and admins
+✅ can login and view the admin dashboard
+❌ can view dashboard sales stats (sales this month, last week, this week, yesterday, today).
+❌ can view dashboard payment stats (mpesa sales, cash sales).
+❌ can CRUD users (cashiers, admins)
 ✅ can view all orders
-❌ can filter orders by date / cashier
+❌ can filter orders by date, cashier and time
 ❌ can void/cancel orders (with reason)
 ❌ can generate sales reports (daily/weekly/monthly)
 ❌ can manage discounts/promotions (CRUD)
+❌ can print sales receipts for paid and unpaid order
+❌ can search payment according to amount or transaction code then link to an order.
 
 Cashiers
 
+❌ can keep track or when the shift starts or ends.
+❌ can view dashboard with sales summary.
+❌ can view dashboard with payment summary (mpesa sales, cash sales).
 ✅ can add products to cart and checkout to create an order (urgent - core MVP)
 ✅ can R products (view product list with search/filter) (urgent - core MVP)
 ❌ can view order history (their own transactions)
@@ -37,6 +45,11 @@ Cashiers
 ❌ can apply discounts to cart (up to 10% without approval)
 ❌ can suspend/resume carts for later
 ❌ can print receipt (or generate PDF)
+❌ can print sales receipts for paid and unpaid order
+❌ can search payment according to amount or transaction code then link to an order.
+❌ can split orders between two people or merge to become for one person.
+❌ can split payments to show payments made by cash or mpesa or card.
+❌ can search payment according to amount or transaction code then link to an order.
 
 Order Management
 
