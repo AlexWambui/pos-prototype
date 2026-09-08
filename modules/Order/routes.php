@@ -26,7 +26,6 @@ Route::middleware('role:admin,super_admin,cashier')->group(function ()
         Route::post('/', 'store')->name('store');
         Route::get('/{order:uuid}/edit', 'edit')->name('edit');
         Route::put('/{order:uuid}', 'update')->name('update');
-        
     });
 });
 

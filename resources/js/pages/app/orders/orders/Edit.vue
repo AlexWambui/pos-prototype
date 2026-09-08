@@ -14,7 +14,7 @@ const {formatPrice} = usePriceFormatter();
 
 interface OrderItem {
     id: number;
-    name: string;
+    product_name: string;
     quantity: number;
     selling_price: number;
 }
@@ -138,7 +138,7 @@ const submitForm = () => {
                 <p class="font-bold text-subheading-text">Items Ordered</p>
                 <div v-for="item in order.data.order_items" :key="item.id" class="items mb-4">
                     <div class="item flex gap-4">
-                        <span>{{ item.name }}</span>
+                        <span>{{ item.product_name }}</span>
                         <span>{{ item.quantity }} @ {{ formatPrice(item.selling_price) }}</span>
                         <span>= Ksh. {{ formatPrice(item.quantity * item.selling_price) }}</span>
                     </div>
