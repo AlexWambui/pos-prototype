@@ -56,6 +56,8 @@ Order Management
 ❌ Order quantity adjustment in the create order page
 ❌ Order creation with line items, subtotal, tax, total (urgent)
 ❌ Payment processing (Cash, Card, QR) (urgent)
+❌ Payments can be adjusted or updated.
+❌ Products can be easily searched for (using: product.name or product.barcode)
 ❌ Order status tracking (pending, paid, voided, refunded)
 ❌ Receipt generation with order #, date, items, totals
 ❌ Order numbering (auto-incrementing, resets daily or sequential)
