@@ -11,6 +11,10 @@ import { usePriceFormatter } from '@/composables/usePriceFormatter';
 import orderRoutes from '@/routes/orders';
 import type { Product } from '@/types/product';
 
+interface CartItem extends Product {
+    quantity: number;
+}
+
 const { formatPrice } = usePriceFormatter();
 
 defineProps<{
@@ -20,7 +24,7 @@ defineProps<{
 }>();
 
 // --- STATE ---
-const cart = ref<Product[]>([]);
+const cart = ref<CartItem[]>([]);
 const deliveryMethod = ref<'shop' | 'delivery'>('shop');
 const selectedArea = ref('');
 const deliveryCost = ref(0);
@@ -43,7 +47,11 @@ const form = useForm({
 
 // --- COMPUTED TOTALS ---
 const subtotal = computed(() => {
-    return cart.value.reduce((sum, item) => sum + item.price, 0);
+    return cart.value.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+});
+
+const totalItemsCount = computed(() => {
+    return cart.value.reduce((sum, item) => sum + item.quantity, 0);
 });
 
 const total = computed(() => {
@@ -89,18 +97,33 @@ watch(deliveryMethod, (newMethod) => {
 // --- ACTIONS ---
 const addToCart = (product: Product) => {
     // Check if already in cart
-    const existing = cart.value.findIndex(item => item.id === product.id);
+    const existing = cart.value.find(item => item.id === product.id);
 
-    if (existing !== -1) {
-        // If you want to allow quantity increase, handle it here
-        return; 
+    if (existing) {
+        existing.quantity += 1;
+    } else {
+        cart.value.push({ ...product, quantity: 1 });
     }
-
-    cart.value.push(product);
 };
 
 const removeFromCart = (id: number) => {
     cart.value = cart.value.filter(item => item.id !== id);
+};
+
+const increaseQuantity = (id: number) => {
+    const item = cart.value.find(item => item.id === id);
+    if (item) item.quantity += 1;
+};
+
+const decreaseQuantity = (id: number) => {
+    const item = cart.value.find(item => item.id === id);
+    if (item) {
+        if (item.quantity > 1) {
+            item.quantity -= 1;
+        } else {
+            removeFromCart(id);
+        }
+    }
 };
 
 const payments = ref([
@@ -135,7 +158,11 @@ watch(isAnonymous, (val) => {
 
 const submitOrder = () => {
     // Populate the cart_items in the form before submitting
-    form.cart_items = cart.value;
+    // Send cart items with quantity
+    form.cart_items = cart.value.map(item => ({
+        ...item,
+        quantity: item.quantity,
+    })) as any;
 
     form.payments = payments.value;
 
@@ -165,6 +192,7 @@ const submitOrder = () => {
                     <div class="w-full h-32 overflow-hidden rounded mb-2 bg-gray-100">
                         <img :src="product.thumbnail_url" :alt="product.name" class="w-full h-full object-cover" />
                     </div>
+
                     <div class="space-y-1">
                         <p class="font-semibold text-sm truncate">{{ product.name }}</p>
                         <p class="text-blue-600 font-bold text-sm">{{ formatPrice(product.price) }}</p>
@@ -174,7 +202,13 @@ const submitOrder = () => {
                             class="w-full bg-blue-800 hover:bg-blue-900 text-white"
                             @click="addToCart(product)"
                         >
-                            Add to Cart
+                            {{ cart.find(i => i.id === product.id) ? 'Add Another' : 'Add to Cart' }}
+                            <span 
+                                v-if="cart.find(i => i.id === product.id)?.quantity"
+                                class="text-white text-xs"
+                            >
+                                ( {{ cart.find(i => i.id === product.id)!.quantity }} )
+                            </span>
                         </Button>
                     </div>
                 </div>
@@ -188,17 +222,49 @@ const submitOrder = () => {
         </div>
 
         <div class="cart-wrapper bg-background text-foreground p-6 rounded-lg shadow-lg h-full overflow-y-auto flex flex-col">
-            <h2 class="text-xl font-bold mb-4 border-b pb-2">Current Order</h2>
+            <h2 class="text-xl font-bold mb-4 border-b pb-2 flex items-center justify-between">
+                <span>Current Order</span>
+                <span 
+                    v-if="totalItemsCount > 0" 
+                    class="text-sm bg-blue-600 text-white rounded-full px-2 py-0.5"
+                >
+                    {{ totalItemsCount }} {{ totalItemsCount === 1 ? 'item' : 'items' }}
+                </span>
+            </h2>
             
             <!-- Cart Items List -->
             <div class="cart-items space-y-2 min-h-25 max-h-50 overflow-y-auto mb-4 flex-1" v-if="cart.length > 0">
                 <div v-for="item in cart" :key="item.id" class="flex justify-between items-center text-sm bg-background text-foreground p-2 rounded border">
-                    <div class="flex-1">
-                        <span class="font-medium">{{ item.name }}</span>
-                        <span class="text-gray-500 ml-2">x1</span>
+                    <div class="flex-1 min-w-0">
+                        <span class="font-medium truncate block">{{ item.name }}</span>
+                        <span class="text-gray-500 text-xs">{{ formatPrice(item.price) }} each</span>
                     </div>
-                    <div class="flex items-center gap-3">
-                        <span class="font-bold">{{ formatPrice(item.price) }}</span>
+
+                    <!-- Quantity Controls -->
+                    <div class="flex items-center gap-2">
+                        <Button 
+                            type="button" 
+                            variant="outline" 
+                            size="icon" 
+                            class="h-6 w-6 rounded-full text-xs"
+                            @click="decreaseQuantity(item.id)"
+                        >
+                            −
+                        </Button>
+                        <span class="w-6 text-center font-semibold">{{ item.quantity }}</span>
+                        <Button 
+                            type="button" 
+                            variant="outline" 
+                            size="icon" 
+                            class="h-6 w-6 rounded-full text-xs"
+                            @click="increaseQuantity(item.id)"
+                        >
+                            +
+                        </Button>
+                    </div>
+
+                    <div class="flex items-center gap-3 ml-3">
+                        <span class="font-bold w-20 text-right">{{ formatPrice(item.price * item.quantity) }}</span>
                         <Button 
                             type="button" 
                             variant="destructive" 
@@ -211,6 +277,7 @@ const submitOrder = () => {
                     </div>
                 </div>
             </div>
+
             <div v-else class="text-gray-400 text-center py-6 flex-1">No items in cart</div>
 
             <!-- Order Form -->

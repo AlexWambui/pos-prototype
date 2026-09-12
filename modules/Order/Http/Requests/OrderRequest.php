@@ -40,6 +40,7 @@ class OrderRequest extends FormRequest
             'cart_items' => 'required|array|min:1',
             'cart_items.*.id' => 'required|exists:products,id',
             'cart_items.*.price' => 'required|numeric|min:0',
+            'cart_items.*.quantity' => 'required|numeric|min:1',
         ];
     }
 }
