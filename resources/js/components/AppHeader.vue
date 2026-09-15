@@ -36,7 +36,7 @@ import { useCurrentUrl } from '@/composables/useCurrentUrl';
 import { getInitials } from '@/composables/useInitials';
 import { toUrl } from '@/lib/utils';
 import { dashboard } from '@/routes';
-import branchRoutes from '@/routes/branches';
+// import branchRoutes from '@/routes/branches';
 import orderRoutes from '@/routes/orders';
 import productRoutes from '@/routes/products';
 import userRoutes from '@/routes/users';
