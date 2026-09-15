@@ -350,7 +350,10 @@ class Order extends Model
 
     public function scopeCompleted($query)
     {
-        return $query->where('order_status', OrderStatusEnum::COMPLETED->value);
+        return $query->where(function ($q) {
+            $q->where('order_status', OrderStatusEnum::COMPLETED->value)
+            ->orWhere('delivery_status', DeliveryStatusEnum::PICKED_UP->value);
+        });
     }
 
     public function scopeForUser($query, int $userId)

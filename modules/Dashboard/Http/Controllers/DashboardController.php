@@ -4,15 +4,14 @@ namespace Modules\Dashboard\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Modules\User\Enums\UserRoles;
 use Modules\User\Models\User;
 use Modules\Product\Models\Product;
 use Modules\Product\Models\ProductCategory;
-use Modules\Delivery\Models\DeliveryLocation;
-use Modules\Delivery\Models\DeliveryArea;
-use Modules\ContactMessage\Models\ContactMessage;
 use Modules\Order\Enums\OrderStatusEnum;
 use Modules\Order\Models\Order;
+use Modules\Payment\Models\Payment;
 
 class DashboardController extends Controller
 {
@@ -34,17 +33,48 @@ class DashboardController extends Controller
 
                     'total_orders' => Order::count(),
                     'orders_need_attention' => Order::where('order_status', OrderStatusEnum::PENDING->value)->whereColumn('amount_paid', '>=', 'total_selling_price')->count(),
-
-                    // 'total_delivery_locations' => DeliveryLocation::count(),
-                    // 'total_delivery_areas' => DeliveryArea::count(),
-
-                    // 'total_callbacks' => ContactMessage::count(),
-                    // 'total_unread_callbacks' => ContactMessage::where('is_read', false)->count(),
                 ]
             ]);
         }
 
         if ($user->role === UserRoles::ADMIN) {
+            $current_year = now()->year;
+
+            $completed_orders_summary = Order::completed()
+                ->selectRaw('COUNT(*) as count, COALESCE(SUM(total_selling_price), 0) as revenue, COALESCE(SUM(total_cost_price), 0) as cogs')->first();
+            $completed_orders_count = (int) $completed_orders_summary->count();
+            $total_revenue = (float) $completed_orders_summary->revenue;
+            $total_cogs = (float) $completed_orders_summary->cogs;
+            $total_gross_profit = $total_revenue - $total_cogs;
+            $gross_profit_margin = $total_revenue > 0 ? ($total_gross_profit / $total_revenue) * 100 : 0;
+            $aov = $completed_orders_count > 0 ? $total_revenue / $completed_orders_count : 0;
+
+            $driver = DB::connection()->getDriverName();
+            $monthlySalesQuery = Order::completed()->whereYear('sold_at', $current_year);
+            if ($driver === 'sqlite') {
+                $monthlySalesQuery
+                    ->selectRaw("CAST(strftime('%m', sold_at) AS INTEGER) as month, SUM(total_selling_price) as total")
+                    ->groupBy('month');
+            } else {
+                $monthlySalesQuery
+                    ->selectRaw("EXTRACT(MONTH FROM sold_at)::int as month, SUM(total_selling_price) as total")
+                    ->groupBy('month');
+            }
+            $raw = $monthlySalesQuery->pluck('total', 'month');
+            $monthly_sales = collect(range(1, 12))
+                ->map(fn ($m) => (float) ($raw[(string) $m] ?? $raw[$m] ?? 0))
+                ->values()
+                ->all();
+
+            $mpesa_total = Payment::query()
+                ->where('payment_method', 'mpesa')
+                ->whereIn('order_id', Order::completed()->select('id'))
+                ->sum('amount');
+            $cash_total = Payment::query()
+                ->where('payment_method', 'cash')
+                ->whereIn('order_id', Order::completed()->select('id'))
+                ->sum('amount');
+
             return inertia('app/dashboards/Admin', [
                 'user' => $user,
                 'stats' => [
@@ -58,11 +88,16 @@ class DashboardController extends Controller
                     'total_orders' => Order::count(),
                     'orders_need_attention' => Order::needsAttention()->count(),
 
-                    // 'total_delivery_locations' => DeliveryLocation::count(),
-                    // 'total_delivery_areas' => DeliveryArea::count(),
-
-                    // 'total_callbacks' => ContactMessage::count(),
-                    // 'total_unread_callbacks' => ContactMessage::where('is_read', false)->count(),
+                    'monthly_sales' => $monthly_sales,
+                    'payment_breakdown' => [
+                        'mpesa' => (float) $mpesa_total,
+                        'cash' => (float) $cash_total,
+                    ],
+                    'total_revenue' => (float) $total_revenue,
+                    'total_cogs' => (float) $total_cogs,
+                    'total_gross_profit' => (float) $total_gross_profit,
+                    'gross_profit_margin' => (float) $gross_profit_margin,
+                    'aov' => (float) $aov
                 ]
             ]);
         }
