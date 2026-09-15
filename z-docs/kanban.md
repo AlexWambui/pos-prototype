@@ -17,7 +17,7 @@ Super Admins
 ✅ can CRUD all users
 ❌ can view system audit logs
 ❌ can reset any user's password
-❌ can configure store settings (tax rates, store name, currency)
+⚠️ can configure store settings (tax rates, store name, currency)
 
 Admins
 
