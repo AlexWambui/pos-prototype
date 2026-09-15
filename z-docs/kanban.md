@@ -17,12 +17,12 @@ Super Admins
 ✅ can CRUD all users
 ❌ can view system audit logs
 ❌ can reset any user's password
-⚠️ can configure store settings (tax rates, store name, currency)
+❌ can configure store settings (tax rates, store name, currency)
 
 Admins
 
 ✅ can login and view the admin dashboard
-❌ can view dashboard sales stats (sales this month, last week, this week, yesterday, today).
+⚠️ can view dashboard sales stats (sales this month, last week, this week, yesterday, today).
 ❌ can view dashboard payment stats (mpesa sales, cash sales).
 ❌ can CRUD users (cashiers, admins)
 ✅ can view all orders
