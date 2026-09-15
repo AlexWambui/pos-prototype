@@ -1,12 +1,12 @@
 <?php
 
-namespace App\Concerns\Users;
+namespace Modules\Support\Concerns;
 
 use Illuminate\Database\Eloquent\Model;
-use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\App;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Modules\User\Models\User;
 
 trait HasCreatorAuditTrail
 {
