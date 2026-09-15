@@ -93,11 +93,11 @@ const mainNavItems = computed(() => {
                 href: userRoutes.index(),
                 icon: Users
             },
-            {
-                title: 'Branches',
-                href: branchRoutes.index(),
-                icon: GitBranch
-            },
+            // {
+            //     title: 'Branches',
+            //     href: branchRoutes.index(),
+            //     icon: GitBranch
+            // },
         )
     }
 
