@@ -18,7 +18,8 @@ Super Admins
 ❌ can view system audit logs
 ❌ can reset any user's password
 ❌ can configure store settings (tax rates, store name, currency)
-❌ can view dashboard sales summary (total revenue, total cogs, gross profit, gross profit margin, aov).
+✅ can view dashboard sales summary (total revenue, total cogs, gross profit, gross profit margin, aov).
+✅ can view dashboard payment summary (mpesa sales, cash sales).
 
 Admins
 
