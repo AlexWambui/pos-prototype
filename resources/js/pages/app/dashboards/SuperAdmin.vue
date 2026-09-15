@@ -35,6 +35,11 @@ interface Props {
             mpesa: number;
             cash: number;
         };
+        total_revenue: number;
+        total_cogs: number;
+        total_gross_profit: number;
+        gross_profit_margin: number;
+        aov: number;
     }
 };
 
@@ -155,19 +160,49 @@ const pieChartOptions = {
                         </span>
                     </template>
                 </DashboardStat>
+            </div>
+        </section>
 
-                <DashboardStat :stat="stats.total_delivery_locations" label="Locations">
+        <section class="financial-stats-wrapper">
+            <h2 class="mb-4 font-medium">Fiscal Overview</h2>
+
+            <div class="stats grid gap-8 lg:grid-cols-5">
+                <DashboardStat :stat="stats.total_revenue" label="Total Revenue">
                     <template #extras>
                         <span class="text-sm text-muted-foreground">
-                            {{ stats.total_delivery_areas }} Areas
+                            All sales at full price
                         </span>
                     </template>
                 </DashboardStat>
 
-                <DashboardStat :stat="stats.total_callbacks" label="Callback Requests">
+                <DashboardStat :stat="stats.total_cogs" label="Total COGS" variant="danger">
                     <template #extras>
                         <span class="text-sm text-muted-foreground">
-                            {{ stats.total_unread_callbacks }} Unread
+                            Total Cost of Goods
+                        </span>
+                    </template>
+                </DashboardStat>
+
+                <DashboardStat :stat="stats.total_gross_profit" label="Gross Profit" variant="success">
+                    <template #extras>
+                        <span class="text-sm text-muted-foreground">
+                            All sales minus cost of goods
+                        </span>
+                    </template>
+                </DashboardStat>
+
+                <DashboardStat :stat="stats.gross_profit_margin" format="percent" label="Gross Profit Margin">
+                    <template #extras>
+                        <span class="text-sm text-muted-foreground">
+                            Percentage of revenue kept after COGS
+                        </span>
+                    </template>
+                </DashboardStat>
+
+                <DashboardStat :stat="stats.aov" format="currency" label="AOV / ATV">
+                    <template #extras>
+                        <span class="text-sm text-muted-foreground">
+                            Average Order Value
                         </span>
                     </template>
                 </DashboardStat>
