@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Link, usePage } from '@inertiajs/vue3';
-import { BookOpen, LayoutGrid, Menu, Users, PhoneCall, Barcode, TruckElectric, Clipboard, BanknoteArrowDown } from '@lucide/vue';
+import { BookOpen, LayoutGrid, Menu, Users, PhoneCall, Barcode, TruckElectric, Clipboard, BanknoteArrowDown, GitBranch } from '@lucide/vue';
 import { computed } from 'vue';
 import AppLogo from '@/components/AppLogo.vue';
 import AppLogoIcon from '@/components/AppLogoIcon.vue';
@@ -36,6 +36,7 @@ import { useCurrentUrl } from '@/composables/useCurrentUrl';
 import { getInitials } from '@/composables/useInitials';
 import { toUrl } from '@/lib/utils';
 import { dashboard } from '@/routes';
+import branchRoutes from '@/routes/branches';
 import orderRoutes from '@/routes/orders';
 import productRoutes from '@/routes/products';
 import userRoutes from '@/routes/users';
@@ -91,6 +92,11 @@ const mainNavItems = computed(() => {
                 title: 'Users',
                 href: userRoutes.index(),
                 icon: Users
+            },
+            {
+                title: 'Branches',
+                href: branchRoutes.index(),
+                icon: GitBranch
             },
         )
     }

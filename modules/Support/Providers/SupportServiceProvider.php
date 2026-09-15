@@ -13,6 +13,7 @@ class SupportServiceProvider extends ServiceProvider
         $this->app->register(\Modules\Product\Providers\ProductServiceProvider::class);
         $this->app->register(\Modules\Order\Providers\OrderServiceProvider::class);
         $this->app->register(\Modules\Payment\Providers\PaymentServiceProvider::class);
+        $this->app->register(\Modules\StoreBranch\Providers\BranchServiceProvider::class);
     }
 
     public function boot(Router $router): void
