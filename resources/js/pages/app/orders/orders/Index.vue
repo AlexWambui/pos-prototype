@@ -164,9 +164,9 @@ const getPaymentStatusColor = (status: string) => {
                             <span class="divider">|</span>
                             <DeleteConfirmationDialog 
                                 :url="orderRoutes.destroy(order.uuid).url" 
-                                title="Delete Product?" 
-                                description="This product will be deleted permanently!" 
-                                confirm-text="Delete Product"
+                                title="Delete Order?" 
+                                description="This order will be deleted permanently!" 
+                                confirm-text="Delete Order"
                             >
                                 <template #trigger>
                                     <button class="action delete">

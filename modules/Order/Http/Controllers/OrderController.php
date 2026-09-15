@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
+use Exception;
 use Modules\Order\Enums\DeliveryStatusEnum;
 use Modules\Order\Enums\OrderStatusEnum;
 use Modules\Order\Models\Order;
@@ -256,8 +257,24 @@ class OrderController extends Controller
         }
     }
 
-    public function destroy()
+    public function destroy(Order $order)
     {
-        //
+        try {
+            $order->delete();
+
+            Inertia::flash('toast', [
+                'type' => "success",
+                'message' => "Order deleted successfully"
+            ]);
+
+            return to_route('orders.index');
+        } catch (Exception $e) {
+            Inertia::flash('toast', [
+                'type' => "error",
+                'message' => "Failed to delete order: {$e->getMessage()}"
+            ]);
+
+            return back()->withInput();
+        }
     }
 }
