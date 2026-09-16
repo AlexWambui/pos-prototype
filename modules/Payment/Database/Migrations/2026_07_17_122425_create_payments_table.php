@@ -31,6 +31,7 @@ return new class extends Migration
             $table->index('order_id');
             $table->index('transaction_reference');
             $table->index('payment_status');
+            $table->index(['order_id', 'payment_method', 'payment_status']);
         });
     }
 
