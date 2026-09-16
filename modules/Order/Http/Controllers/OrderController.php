@@ -62,148 +62,176 @@ class OrderController extends Controller
     {
         $validated = $request->validated();
 
-        return DB::transaction(function () use ($validated) {
-            // --- CALCULATE TOTALS ---
-            $subtotal = collect($validated['cart_items'])->sum(fn($item) => $item['price'] * ($item['quantity'] ?? 1));
+        try {
+            DB::transaction(function () use ($validated) {
+                // --- CALCULATE TOTALS ---
+                $subtotal = collect($validated['cart_items'])->sum(fn($item) => $item['price'] * ($item['quantity'] ?? 1));
 
-            // Total cost price
-            $total_cost_price = 0;
-            foreach ($validated['cart_items'] as $item) {
-                $product = Product::find($item['id']);
-                $total_cost_price += ($product->cost_price ?? 0) * ($item['quantity'] ?? 1);
-            }
+                // Total cost price
+                $total_cost_price = 0;
+                foreach ($validated['cart_items'] as $item) {
+                    $product = Product::find($item['id']);
+                    $total_cost_price += ($product->cost_price ?? 0) * ($item['quantity'] ?? 1);
+                }
 
-            // Total selling price (subtotal + delivery)
-            $total_selling_price = $subtotal + $validated['delivery_cost'];
+                // Total selling price (subtotal + delivery)
+                $total_selling_price = $subtotal + $validated['delivery_cost'];
 
-            // Calculate total paid from payments
-            $total_paid = collect($validated['payments'])->sum('amount');
+                // Calculate total paid from payments
+                $total_paid = collect($validated['payments'])->sum('amount');
 
-            // Determine initial order status
-            $initialOrderStatus = $validated['delivery_method'] === 'delivery' 
-                ? OrderStatusEnum::PENDING 
-                : OrderStatusEnum::PROCESSING;
+                // Determine initial order status
+                $initialOrderStatus = $validated['delivery_method'] === 'delivery' 
+                    ? OrderStatusEnum::PENDING 
+                    : OrderStatusEnum::PROCESSING;
 
-            // delivery details
-            $delivery_location = $validated['delivery_method'] === 'shop' ? 'shop' : $validated['location'];
-            $delivery_area = $validated['delivery_method'] === 'shop' ? 'shop' : $validated['area'];
-            $delivery_address = $validated['delivery_method'] === 'shop' ? 'shop' : $validated['address'];
+                // delivery details
+                $delivery_location = $validated['delivery_method'] === 'shop' ? 'shop' : $validated['location'];
+                $delivery_area = $validated['delivery_method'] === 'shop' ? 'shop' : $validated['area'];
+                $delivery_address = $validated['delivery_method'] === 'shop' ? 'shop' : $validated['address'];
 
-            // --- CREATE THE ORDER ---
-            $order = Order::create([
-                'order_number' => 'Ord_' . strtoupper(Str::random(6)) . '_' . now()->format('ymd'),
-                'order_channel' => $validated['order_channel'],
-                'order_status' => $initialOrderStatus->value,
-                
-                'subtotal' => $subtotal,
-                'shipping_cost' => $validated['delivery_cost'],
-                'total_selling_price' => $total_selling_price,
-                'total_cost_price' => $total_cost_price,
-                'amount_paid' => $total_paid,
-
-                'customer_name' => $validated['customer_name'],
-                'customer_phone' => $validated['customer_phone'],
-                'customer_email' => $validated['customer_email'],
-
-                'delivery_method' => $validated['delivery_method'],
-                'delivery_location' => $delivery_location,
-                'delivery_area' => $delivery_area,
-                'delivery_address' => $delivery_address,
-                'delivery_status' => DeliveryStatusEnum::PENDING->value,
-
-                'sold_at' => now(),
-
-                'user_id' => Auth::id(),
-            ]);
-
-            // Create initial order status
-            $orderStatus = $order->orderStatuses()->create([
-                'type' => 'order',
-                'status' => $initialOrderStatus->value,
-                'notes' => 'Order created via ' . $validated['order_channel'],
-                'user_id' => Auth::id(), // If admin is logged in
-                'is_system' => false,
-                'changed_at' => now(),
-            ]);
-
-            // Create initial delivery status
-            $deliveryStatus = $order->orderStatuses()->create([
-                'type' => 'delivery',
-                'status' => DeliveryStatusEnum::PENDING->value,
-                'notes' => 'Delivery created',
-                'user_id' => Auth::id(),
-                'is_system' => false,
-                'changed_at' => now(),
-            ]);
-
-            // --- CREATE ORDER ITEMS (Loop through cart) ---
-            foreach ($validated['cart_items'] as $item) {
-                $product = Product::find($item['id']);
-                $quantity = $item['quantity'] ?? 1;
-                
-                OrderItem::create([
-                    'order_id' => $order->id,
-                    'product_id' => $product->id,
+                // --- CREATE THE ORDER ---
+                $order = Order::create([
+                    'order_number' => 'Ord_' . strtoupper(Str::random(6)) . '_' . now()->format('ymd'),
+                    'order_channel' => $validated['order_channel'],
+                    'order_status' => $initialOrderStatus->value,
                     
-                    'product_name' => $product->name,
-                    'product_sku' => $product->sku ?? null,
-                    'quantity' => $quantity,
-                    'cost_price' => $product->cost_price ?? 0,
-                    'selling_price' => $item['price'],
-                    'subtotal' => $item['price'] * $quantity,
-                    'total' => $item['price'] * $quantity,
+                    'subtotal' => $subtotal,
+                    'shipping_cost' => $validated['delivery_cost'],
+                    'total_selling_price' => $total_selling_price,
+                    'total_cost_price' => $total_cost_price,
+                    'amount_paid' => $total_paid,
+
+                    'customer_name' => $validated['customer_name'],
+                    'customer_phone' => $validated['customer_phone'],
+                    'customer_email' => $validated['customer_email'],
+
+                    'delivery_method' => $validated['delivery_method'],
+                    'delivery_location' => $delivery_location,
+                    'delivery_area' => $delivery_area,
+                    'delivery_address' => $delivery_address,
+                    'delivery_status' => DeliveryStatusEnum::PENDING->value,
+
+                    'sold_at' => now(),
+
+                    'user_id' => Auth::id(),
                 ]);
 
-                // Decrease stock
-                $product->decrement('current_stock', $quantity);
-            }
+                // Create initial order status
+                $orderStatus = $order->orderStatuses()->create([
+                    'type' => 'order',
+                    'status' => $initialOrderStatus->value,
+                    'notes' => 'Order created via ' . $validated['order_channel'],
+                    'user_id' => Auth::id(), // If admin is logged in
+                    'is_system' => false,
+                    'changed_at' => now(),
+                ]);
 
-            // --- CREATE PAYMENT RECORD ---
-            foreach ($validated['payments'] as $paymentData) {
-                if ($paymentData['amount'] > 0) {
-                    Payment::create([
+                // Create initial delivery status
+                $deliveryStatus = $order->orderStatuses()->create([
+                    'type' => 'delivery',
+                    'status' => DeliveryStatusEnum::PENDING->value,
+                    'notes' => 'Delivery created',
+                    'user_id' => Auth::id(),
+                    'is_system' => false,
+                    'changed_at' => now(),
+                ]);
+
+                // --- CREATE ORDER ITEMS (Loop through cart) ---
+                foreach ($validated['cart_items'] as $item) {
+                    $product = Product::find($item['id']);
+                    $quantity = $item['quantity'] ?? 1;
+
+                    if ($product->tracksInventory()) {
+                        // Friendly pre-check (fast fail with a nice message)
+                        if (! $product->hasStockFor($quantity)) {
+                            throw new \RuntimeException(
+                                "Insufficient stock for {$product->name}. "
+                                . "Available: {$product->current_stock}, requested: {$quantity}."
+                            );
+                        }
+
+                        // Atomic decrement (race-safe)
+                        $decremented = Product::query()
+                            ->where('id', $product->id)
+                            ->where('current_stock', '>=', $quantity)
+                            ->decrement('current_stock', $quantity);
+
+                        if ($decremented === 0) {
+                            throw new \RuntimeException(
+                                "Stock for {$product->name} changed. Please refresh and try again."
+                            );
+                        }
+                    }
+                    
+                    OrderItem::create([
                         'order_id' => $order->id,
-                        'payment_method' => $paymentData['method'],
-                        'transaction_reference' => null, // Handled manually for walk-in
-                        'amount' => $paymentData['amount'],
-                        'payment_status' => 'paid',
-                        'paid_at' => now()
+                        'product_id' => $product->id,
+                        
+                        'product_name' => $product->name,
+                        'product_sku' => $product->sku ?? null,
+                        'quantity' => $quantity,
+                        'cost_price' => $product->cost_price ?? 0,
+                        'selling_price' => $item['price'],
+                        'subtotal' => $item['price'] * $quantity,
+                        'total' => $item['price'] * $quantity,
                     ]);
                 }
-            }
 
-            // If fully paid and delivery, update order status to confirmed
-            if ($total_paid >= $total_selling_price && $validated['delivery_method'] === 'delivery') {
-                $order->updateOrderStatus(
-                    OrderStatusEnum::CONFIRMED,
-                    'Order fully paid, confirmed',
-                    null,
-                    Auth::id()
-                );
-            }
+                // --- CREATE PAYMENT RECORD ---
+                foreach ($validated['payments'] as $paymentData) {
+                    if ($paymentData['amount'] > 0) {
+                        Payment::create([
+                            'order_id' => $order->id,
+                            'payment_method' => $paymentData['method'],
+                            'transaction_reference' => null, // Handled manually for walk-in
+                            'amount' => $paymentData['amount'],
+                            'payment_status' => 'paid',
+                            'paid_at' => now()
+                        ]);
+                    }
+                }
 
-            // If fully paid and shop pickup, update to ready_for_pickup
-            if ($total_paid >= $total_selling_price && $validated['delivery_method'] === 'shop') {
-                $order->updateOrderStatus(
-                    OrderStatusEnum::READY_FOR_PICKUP,
-                    'Order fully paid, ready for pickup',
-                    null,
-                    Auth::id()
-                );
-            }
+                // If fully paid and delivery, update order status to confirmed
+                if ($total_paid >= $total_selling_price && $validated['delivery_method'] === 'delivery') {
+                    $order->updateOrderStatus(
+                        OrderStatusEnum::CONFIRMED,
+                        'Order fully paid, confirmed',
+                        null,
+                        Auth::id()
+                    );
+                }
 
-            // --- OPTIONAL: ASSIGN LOYALTY POINTS ---
-            // If you have a user/loyalty system, you can add points here
-            // $user = User::where('phone', $validated['customer_phone'])->first();
-            // if($user) $user->increment('points', floor($totalAmount / 100));
+                // If fully paid and shop pickup, update to ready_for_pickup
+                if ($total_paid >= $total_selling_price && $validated['delivery_method'] === 'shop') {
+                    $order->updateOrderStatus(
+                        OrderStatusEnum::READY_FOR_PICKUP,
+                        'Order fully paid, ready for pickup',
+                        null,
+                        Auth::id()
+                    );
+                }
 
+                // --- OPTIONAL: ASSIGN LOYALTY POINTS ---
+                // If you have a user/loyalty system, you can add points here
+                // $user = User::where('phone', $validated['customer_phone'])->first();
+                // if($user) $user->increment('points', floor($totalAmount / 100));
+            });
+        } catch (\RuntimeException $e) {
             Inertia::flash('toast', [
-                'type' => 'success',
-                'message' => "Order added successfully",
+                'type' => 'error',
+                'message' => $e->getMessage(),
             ]);
 
-            return to_route('orders.create');
-        });
+            return back()->withInput();
+        }
+
+        Inertia::flash('toast', [
+            'type'    => 'success',
+            'message' => 'Order added successfully',
+        ]);
+
+        return to_route('orders.create');
     }
 
     public function edit(Order $order)

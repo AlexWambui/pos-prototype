@@ -117,4 +117,32 @@ class Product extends Model
                 ->orWhereRaw('LOWER(description) LIKE ?', ["%{$searchTerm}%"]);
         });
     }
+
+    public function tracksInventory(): bool
+    {
+        return (bool) $this->track_inventory;
+    }
+
+    public function hasStockFor(int|float $quantity): bool
+    {
+        if (!$this->tracksInventory()) {
+            return true;
+        }
+
+        return (float) $this->current_stock >= (float) $quantity;
+    }
+
+    public function decrementStock(int $quantity): bool
+    {
+        if ($quantity <= 0) {
+            throw new \InvalidArgumentException('Quantity must be positive');
+        }
+
+        $affected = static::query()
+            ->where('id', $this->id)
+            ->where('current_stock', '>=', $quantity)
+            ->decrement('current_stock', $quantity);
+
+        return $affected > 0;
+    }
 }

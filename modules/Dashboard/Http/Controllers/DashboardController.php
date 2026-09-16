@@ -184,6 +184,7 @@ class DashboardController extends Controller
 
             $lowStock = Product::query()
                 ->where('is_active', true)
+                ->where('track_inventory', true)
                 ->whereColumn('current_stock', '<=', 'low_stock_threshold')
                 ->orderBy('current_stock')
                 ->limit(5)
