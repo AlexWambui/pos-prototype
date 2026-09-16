@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import {computed} from 'vue';
 import { Form, Head, Link } from '@inertiajs/vue3';
 import FormHeader from '@/components/custom/FormHeader.vue';
 import InputError from '@/components/InputError.vue';
@@ -10,38 +11,26 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectVa
 import { Spinner } from '@/components/ui/spinner';
 import userRoutes from '@/routes/users';
 
-// Role constants matching UserRoles enum
-const ROLES = {
-    SUPER_ADMIN: 0,
-    ADMIN: 1,
-    CASHIER: 2,
-} as const;
+interface Props {
+    role_options: Record<string, string>;
+    status_options: Record<string, string>;
+}
 
-// Status constants matching UserStatuses enum
-const STATUS = {
-    INACTIVE: 0,
-    ACTIVE: 1,
-    SUSPENDED: 2,
-} as const;
+const props = defineProps<Props>();
 
-const roleOptions = [
-    { value: ROLES.SUPER_ADMIN, label: 'Super Admin' },
-    { value: ROLES.ADMIN, label: 'Admin' },
-    { value: ROLES.CASHIER, label: 'Cashier' }
-];
+const roleOptions = computed(() => 
+    Object.entries(props.role_options).map(([value, label]) => ({
+        value: Number(value),
+        label,
+    }))
+);
 
-const statusOptions = [
-    { value: STATUS.ACTIVE, label: 'Active' },
-    { value: STATUS.INACTIVE, label: 'Inactive' },
-    { value: STATUS.SUSPENDED, label: 'Suspended' },
-];
-
-defineOptions({
-    layout: {
-        title: 'Create User',
-        description: 'Add a new user to the system',
-    },
-});
+const statusOptions = computed(() =>
+    Object.entries(props.status_options).map(([value, label]) => ({
+        value: Number(value),
+        label,
+    }))
+);
 </script>
 
 <template>

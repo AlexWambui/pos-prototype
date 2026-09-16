@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import {computed} from 'vue';
 import { Form, Head, Link } from '@inertiajs/vue3';
 import FormHeader from '@/components/custom/FormHeader.vue';
 import InputError from '@/components/InputError.vue';
@@ -20,42 +21,36 @@ interface Props {
             role: number;
             status: number;
             is_active: boolean;
+            role_label: string;
         };
     };
+    role_options: Record<string, string>;
+    status_options: Record<string, string>;
 }
+
+const statusOptions = computed(() =>
+    Object.entries(props.status_options).map(([value, label]) => ({
+        value: Number(value),
+        label,
+    }))
+);
 
 const props = defineProps<Props>();
 const userData = props.user.data;
 
-const ROLES = {
-    SUPER_ADMIN: 0,
-    ADMIN: 1,
-    CASHIER: 2,
-} as const;
+const roleOptions = computed(() => {
+    const entries = Object.entries(props.role_options).map(([value, label]) => ({
+        value: Number(value),
+        label,
+    }));
 
-const STATUS = {
-    INACTIVE: 0,
-    ACTIVE: 1,
-    SUSPENDED: 2,
-} as const;
+    // Ensure the user's current role is present even if not normally assignable
+    // (shouldn't happen due to policy, but defensive)
+    if (!entries.some(o => o.value === userData.role)) {
+        entries.push({ value: userData.role, label: userData.role_label });
+    }
 
-const roleOptions = [
-    { value: ROLES.SUPER_ADMIN, label: 'Super Admin' },
-    { value: ROLES.ADMIN, label: 'Admin' },
-    { value: ROLES.CASHIER, label: 'Cashier' }
-];
-
-const statusOptions = [
-    { value: STATUS.ACTIVE, label: 'Active' },
-    { value: STATUS.INACTIVE, label: 'Inactive' },
-    { value: STATUS.SUSPENDED, label: 'Suspended' },
-];
-
-defineOptions({
-    layout: {
-        title: 'Edit User',
-        description: 'Update user information',
-    },
+    return entries;
 });
 </script>
 

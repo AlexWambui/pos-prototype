@@ -30,21 +30,28 @@ enum UserRoles: int
         return $labels;
     }
 
-    public static function adminLabels(): array
+    public static function options(): array
     {
-        return [
-            self::CUSTOMER->value => self::CUSTOMER->label(),
-            self::ADMIN->value => self::ADMIN->label(),
-        ];
+        return collect(self::cases())
+            ->mapWithKeys(fn (self $r) => [$r->value => $r->label()])
+            ->all();
     }
 
-    public static function superAdminLabels(): array
+    public static function adminOptions(): array
     {
-        return [
-            self::SUPER_ADMIN->value => self::SUPER_ADMIN->label(),
-            self::ADMIN->value => self::ADMIN->label(),
-            self::CUSTOMER->value => self::CUSTOMER->label(),
-        ];
+        return collect(self::cases())
+            ->reject(fn (self $r) => $r === self::SUPER_ADMIN)
+            ->mapWithKeys(fn (self $r) => [$r->value => $r->label()])
+            ->all();
+    }
+
+    public static function optionsFor(self $role): array
+    {
+        return match ($role) {
+            self::SUPER_ADMIN => self::options(),
+            self::ADMIN       => self::adminOptions(),
+            default           => [],
+        };
     }
 
     public static function tryFromLabel(string $label): ?self
