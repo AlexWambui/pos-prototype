@@ -151,12 +151,64 @@ class DashboardController extends Controller
         }
 
         if ($user->role === UserRoles::CASHIER) {
+            $today = now()->startOfDay();
+
+            $order_summary = Order::query()
+                ->where('user_id', $user->id)
+                ->where('sold_at', '>=', $today)
+                ->selectRaw('
+                    COUNT(*) as orders_count,
+                    COALESCE(SUM(CASE WHEN order_status != ? THEN total_selling_price ELSE 0 END), 0) as sales_total,
+                    SUM(CASE WHEN order_status IN (?, ?) AND amount_paid < total_selling_price THEN 1 ELSE 0 END) as pending_payment,
+                    SUM(CASE WHEN order_status = ? THEN 1 ELSE 0 END) as ready_for_pickup
+                ', [
+                    OrderStatusEnum::CANCELLED->value,
+                    OrderStatusEnum::PENDING->value,
+                    OrderStatusEnum::PROCESSING->value,
+                    OrderStatusEnum::READY_FOR_PICKUP->value,
+                ])
+                ->first();
+
+            $payment_breakdown = Payment::query()
+                ->whereIn('order_id', function ($q) use ($user, $today) {
+                    $q->select('id')
+                    ->from('orders')
+                    ->where('user_id', $user->id)
+                    ->where('sold_at', '>=', $today);
+                })
+                ->where('payment_status', 'paid')
+                ->whereIn('payment_method', ['mpesa', 'cash'])
+                ->selectRaw('payment_method, COALESCE(SUM(amount), 0) as total')
+                ->groupBy('payment_method')
+                ->pluck('total', 'payment_method');
+
+            $lowStock = Product::query()
+                ->where('is_active', true)
+                ->whereColumn('current_stock', '<=', 'low_stock_threshold')
+                ->orderBy('current_stock')
+                ->limit(5)
+                ->get(['id', 'name', 'current_stock'])
+                ->map(fn ($p) => [
+                    'id' => $p->id,
+                    'name' => $p->name,
+                    'current_stock' => (float) $p->current_stock,
+                ]);
+
             return inertia('app/dashboards/Cashier', [
                 'user' => $user,
                 'stats' => [
-                    'total_products' => Product::where('is_active', true)->count(),
-                    'total_product_categories' => ProductCategory::where('is_active', true)->count(),
-                ]
+                    'today' => [
+                        'orders_count'    => (int) $order_summary->orders_count,
+                        'sales_total'     => (float) $order_summary->sales_total,
+                        'cash_collected'  => (float) ($payment_breakdown['cash'] ?? 0),
+                        'mpesa_collected' => (float) ($payment_breakdown['mpesa'] ?? 0),
+                    ],
+                    'needs_attention' => [
+                        'pending_payment'  => (int) $order_summary->pending_payment,
+                        'ready_for_pickup' => (int) $order_summary->ready_for_pickup,
+                    ],
+                    'low_stock' => $lowStock,
+                ],
             ]);
         }
 
