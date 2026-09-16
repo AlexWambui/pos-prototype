@@ -61,6 +61,7 @@ return new class extends Migration
             // Indexes for fast lookups
             $table->index(['sold_at']);
             $table->index(['customer_phone']);
+            $table->index(['user_id', 'created_at']);
         });
     }
 

@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { useForm, Head } from '@inertiajs/vue3';
-import { computed, watch, ref } from 'vue';
+import { useForm, Head, router } from '@inertiajs/vue3';
+import { computed, watch, ref, onMounted, onUnmounted } from 'vue';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,20 +11,45 @@ import { usePriceFormatter } from '@/composables/usePriceFormatter';
 import orderRoutes from '@/routes/orders';
 import type { Product } from '@/types/product';
 
-interface CartItem extends Product {
+interface RecentOrder {
+    id: number;
+    uuid: string;
+    order_number: string;
+    customer_name: string;
+    total_selling_price: number;
+    order_status: string;
+    order_status_label: string;
+    user?: { id: number; name: string } | null;
+    created_at: string;
+}
+
+interface CartItemPayload extends Product {
     quantity: number;
 }
 
 const { formatPrice } = usePriceFormatter();
 
-defineProps<{
+const props = defineProps<{
     products: { data: Product[] };
+    recent_orders: { data: RecentOrder[] };
+    can_view_all: boolean;
     orderStatuses: Record<string, string>;
     deliveryStatuses: Record<string, string>;
 }>();
 
+const statusClasses: Record<string, string> = {
+    pending:         'bg-yellow-100 text-yellow-800',
+    confirmed:       'bg-blue-100 text-blue-800',
+    processing:      'bg-blue-100 text-blue-800',
+    ready_for_pickup:'bg-purple-100 text-purple-800',
+    completed:       'bg-green-100 text-green-800',
+    cancelled:       'bg-red-100 text-red-800',
+};
+
+const statusClass = (status: string) => statusClasses[status] ?? 'bg-gray-100 text-gray-800';
+
 // --- STATE ---
-const cart = ref<CartItem[]>([]);
+const cart = ref<CartItemPayload[]>([]);
 const deliveryMethod = ref<'shop' | 'delivery'>('shop');
 const selectedArea = ref('');
 const deliveryCost = ref(0);
@@ -42,7 +67,7 @@ const form = useForm({
     delivery_cost: 0,
     amount_paid: 0,
     payments: [{ amount: 0, method: 'mpesa' }],
-    cart_items: [] as Product[], 
+    cart_items: [] as CartItemPayload[], 
 });
 
 // --- COMPUTED TOTALS ---
@@ -138,10 +163,6 @@ const removePaymentRow = (index: number) => {
     payments.value.splice(index, 1);
 }
 
-// const totalPaid = computed(() => {
-//     return payments.value.reduce((sum, p) => sum + Number(p.amount), 0);
-// });
-
 const isAnonymous = ref(false);
 
 watch(isAnonymous, (val) => {
@@ -162,7 +183,7 @@ const submitOrder = () => {
     form.cart_items = cart.value.map(item => ({
         ...item,
         quantity: item.quantity,
-    })) as any;
+    }));
 
     form.payments = payments.value;
 
@@ -176,9 +197,22 @@ const submitOrder = () => {
             selectedArea.value = '';
             payments.value = [{amount: 0, method: 'mpesa'}];
             form.reset(); 
+
+            router.reload({only: ['recent_orders', 'products']})
         }
     });
 };
+
+let interval: number | undefined;
+
+onMounted(() => {
+    if (!props.can_view_all) return; // only admins poll
+    interval = window.setInterval(() => {
+        router.reload({ only: ['recent_orders'] });
+    }, 30_000); // every 30s
+});
+
+onUnmounted(() => clearInterval(interval));
 </script>
 
 <template>
@@ -429,6 +463,64 @@ const submitOrder = () => {
                     Confirm Order
                 </Button>
             </form>
+        </div>
+    </div>
+
+    <!-- Recent Orders -->
+    <div class="recent-orders border-t pt-4 mt-4">
+        <div class="flex items-center justify-between mb-3">
+            <h3 class="font-semibold text-sm text-gray-700">
+                {{ can_view_all ? 'Recent Orders (All Users)' : 'Your Recent Orders' }}
+            </h3>
+
+            <a
+                v-if="can_view_all"
+                :href="orderRoutes.index().url"
+                class="text-xs text-blue-600 hover:underline"
+            >
+                View all →
+            </a>
+        </div>
+
+        <div v-if="recent_orders.data.length === 0" class="text-xs text-gray-400 py-4 text-center">
+            No recent orders
+        </div>
+
+        <div v-else class="space-y-2 max-h-64 overflow-y-auto pr-1">
+            <a
+                v-for="order in recent_orders.data"
+                :key="order.id"
+                :href="orderRoutes.edit(order.uuid).url"
+                class="flex items-center justify-between p-2 rounded border text-xs hover:bg-gray-50 dark:hover:bg-gray-800 transition"
+            >
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2">
+                        <span class="font-mono text-[10px] text-gray-500">
+                            {{ order.order_number }}
+                        </span>
+                        <span
+                            class="rounded-full px-1.5 py-0.5 text-[10px] font-medium"
+                            :class="statusClass(order.order_status)"
+                        >
+                            {{ order.order_status_label }}
+                        </span>
+                    </div>
+                    <div class="text-gray-700 dark:text-gray-300 truncate">
+                        {{ order.customer_name }}
+                    </div>
+                    <div v-if="can_view_all && order.user" class="text-[10px] text-gray-400">
+                        by {{ order.user.name }}
+                    </div>
+                </div>
+                <div class="text-right ml-3">
+                    <div class="font-bold text-gray-900 dark:text-gray-100">
+                        {{ formatPrice(order.total_selling_price) }}
+                    </div>
+                    <div class="text-[10px] text-gray-400">
+                        {{ order.created_at }}
+                    </div>
+                </div>
+            </a>
         </div>
     </div>
 </template>

@@ -5,6 +5,7 @@ namespace Modules\Order\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 use InvalidArgumentException;
 use Modules\User\Models\User;
@@ -12,6 +13,7 @@ use Modules\Payment\Models\Payment;
 use Modules\Support\Concerns\HasUuid;
 use Modules\Order\Enums\OrderStatusEnum;
 use Modules\Order\Enums\DeliveryStatusEnum;
+use Modules\User\Enums\UserRoles;
 
 class Order extends Model
 {
@@ -441,5 +443,20 @@ class Order extends Model
                 ->orWhereRaw('LOWER(email) LIKE ?', [$search_term]);
             });
         });
+    }
+
+    public function scopeVisibleTo(Builder $query, User $user): Builder
+    {
+        if (in_array($user->role, [UserRoles::SUPER_ADMIN, UserRoles::ADMIN], true)) {
+            return $query;
+        }
+
+        // Everyone else (cashiers) sees only what they created
+        return $query->where('user_id', $user->id);
+    }
+
+    public function scopeRecent(Builder $query): Builder
+    {
+        return $query->latest('created_at');
     }
 }

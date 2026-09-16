@@ -18,6 +18,7 @@ use Modules\Payment\Models\Payment;
 use Modules\Order\Http\Resources\OrderResource;
 use Modules\Order\Http\Resources\ProductPOSResource;
 use Modules\Order\Http\Requests\OrderRequest;
+use Modules\User\Enums\UserRoles;
 
 class OrderController extends Controller
 {
@@ -40,8 +41,20 @@ class OrderController extends Controller
             ->where('is_active', true)
             ->get();
 
+        $recent_orders = Order::query()
+            ->visibleTo(Auth::user())
+            ->recent()
+            ->with('user:id,name', 'orderItems')
+            ->limit(10)
+            ->get();
+
         return inertia('app/orders/orders/Create', [
-            'products' => ProductPOSResource::collection($products)
+            'products' => ProductPOSResource::collection($products),
+            'recent_orders' => OrderResource::collection($recent_orders),
+            'can_view_all' => in_array(Auth::user()->role, [
+                UserRoles::SUPER_ADMIN,
+                UserRoles::ADMIN,
+            ], true),
         ]);
     }
 
@@ -99,6 +112,8 @@ class OrderController extends Controller
                 'delivery_status' => DeliveryStatusEnum::PENDING->value,
 
                 'sold_at' => now(),
+
+                'user_id' => Auth::id(),
             ]);
 
             // Create initial order status
@@ -187,7 +202,7 @@ class OrderController extends Controller
                 'message' => "Order added successfully",
             ]);
 
-            return redirect()->back();
+            return to_route('orders.create');
         });
     }
 
