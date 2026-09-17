@@ -9,10 +9,12 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Modules\Support\Concerns\HasUuid;
 use Modules\User\Enums\UserRoles;
 use Modules\User\Enums\UserStatuses;
-use Illuminate\Database\Eloquent\Builder;
+use Modules\Order\Models\Order;
 
 class User extends Authenticatable
 {
@@ -44,6 +46,21 @@ class User extends Authenticatable
             'role' => UserRoles::class,
             'status' => UserStatuses::class
         ];
+    }
+
+    public function orders(): HasMany
+    {
+        return $this->hasMany(Order::class, 'user_id');
+    }
+
+    public function createdOrders(): HasMany
+    {
+        return $this->hasMany(Order::class, 'created_by');
+    }
+
+    public function updatedOrders(): HasMany
+    {
+        return $this->hasMany(Order::class, 'updated_by');
     }
 
     public function hasRole(string $role_name): bool
@@ -78,14 +95,14 @@ class User extends Authenticatable
         return $this->isActive();
     }
 
-    public function getRoleLabelAttribute(): string
+    public function getRoleLabelAttribute(): ?string
     {
-        return $this->role->label();
+        return $this->role?->label();
     }
 
-    public function getStatusLabelAttribute(): string
+    public function getStatusLabelAttribute(): ?string
     {
-        return $this->status->label();
+        return $this->status?->label();
     }
 
     public function getImageUrlAttribute(): ?string

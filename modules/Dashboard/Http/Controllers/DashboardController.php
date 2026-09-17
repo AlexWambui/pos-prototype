@@ -154,7 +154,7 @@ class DashboardController extends Controller
             $today = now()->startOfDay();
 
             $order_summary = Order::query()
-                ->where('user_id', $user->id)
+                ->where('created_by', $user->id)
                 ->where('sold_at', '>=', $today)
                 ->selectRaw('
                     COUNT(*) as orders_count,
@@ -173,7 +173,7 @@ class DashboardController extends Controller
                 ->whereIn('order_id', function ($q) use ($user, $today) {
                     $q->select('id')
                     ->from('orders')
-                    ->where('user_id', $user->id)
+                    ->where('created_by', $user->id)
                     ->where('sold_at', '>=', $today);
                 })
                 ->where('payment_status', 'paid')

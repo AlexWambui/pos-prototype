@@ -55,14 +55,16 @@ return new class extends Migration
             $table->string('shipping_address_snapshot')->nullable();
 
             $table->foreignId('user_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignId('updated_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamp('sold_at');
             $table->timestamps();
             
             // Indexes for fast lookups
             $table->index(['sold_at']);
             $table->index(['customer_phone']);
-            $table->index(['user_id', 'created_at']);
-            $table->index(['user_id', 'sold_at']);
+            $table->index(['created_by', 'created_at']);
+            $table->index(['created_by', 'sold_at']);
         });
     }
 

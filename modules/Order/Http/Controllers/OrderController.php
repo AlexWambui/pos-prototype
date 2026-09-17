@@ -16,21 +16,42 @@ use Modules\Order\Models\OrderItem;
 use Modules\Product\Models\Product;
 use Modules\Payment\Models\Payment;
 use Modules\Order\Http\Resources\OrderResource;
+use Modules\Order\Http\Resources\OrderIndexPageResource;
 use Modules\Order\Http\Resources\ProductPOSResource;
 use Modules\Order\Http\Requests\OrderRequest;
 use Modules\User\Enums\UserRoles;
+use Modules\User\Models\User;
 
 class OrderController extends Controller
 {
     public function index(Request $request)
     {
-        $orders = Order::search($request->search)->latest()->paginate(50);
+        $orders = Order::query()
+            ->search($request->query('search'))
+            ->when($request->status, fn ($q, $v) => $q->where('order_status', $v))
+            ->when($request->created_by, fn ($q, $v) => $q->where('created_by', $v))
+            ->when($request->delivery_method, fn ($q, $v) => $q->where('delivery_method', $v))
+            ->when($request->from, fn ($q, $v) => $q->whereDate('sold_at', '>=', $v))
+            ->when($request->to, fn ($q, $v) => $q->whereDate('sold_at', '<=', $v))
+            ->when($request->payment_status === 'paid', fn ($q) => $q->paid())
+            ->when($request->payment_status === 'unpaid', fn ($q) => $q->where('amount_paid', 0))
+            ->when($request->payment_status === 'partially_paid', fn ($q) => $q->partiallyPaid())
+            ->with(['user', 'createdBy', 'updatedBy'])
+            ->latest()
+            ->paginate(50)
+            ->withQueryString();
 
         return Inertia::render('app/orders/orders/Index', [
-            'orders' => OrderResource::collection($orders),
-            'filters' => [
-                'search' => $request->search
-            ],
+            'orders'  => OrderIndexPageResource::collection($orders),
+            'filters' => $request->only([
+                'search', 'status', 'created_by', 'delivery_method',
+                'payment_status', 'from', 'to',
+            ]),
+            'statuses' => collect(OrderStatusEnum::cases())->map(fn ($s) => [
+                'value' => $s->value,
+                'label' => $s->label(),
+            ]),
+            'cashiers' => User::query()->whereIn('role', [UserRoles::CASHIER->value, UserRoles::ADMIN->value, UserRoles::SUPER_ADMIN->value])->orderBy('name')->get(['id', 'name'])
         ]);
     }
 
@@ -114,7 +135,7 @@ class OrderController extends Controller
 
                     'sold_at' => now(),
 
-                    'user_id' => Auth::id(),
+                    'user_id' => null,
                 ]);
 
                 // Create initial order status

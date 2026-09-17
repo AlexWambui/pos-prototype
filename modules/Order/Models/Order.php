@@ -11,13 +11,14 @@ use InvalidArgumentException;
 use Modules\User\Models\User;
 use Modules\Payment\Models\Payment;
 use Modules\Support\Concerns\HasUuid;
+use Modules\Support\Concerns\HasCreatorAuditTrail;
 use Modules\Order\Enums\OrderStatusEnum;
 use Modules\Order\Enums\DeliveryStatusEnum;
 use Modules\User\Enums\UserRoles;
 
 class Order extends Model
 {
-    use HasUuid;
+    use HasUuid, HasCreatorAuditTrail;
 
     protected $guarded = [];
 
@@ -35,7 +36,17 @@ class Order extends Model
 
     public function user(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function createdBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function updatedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'updated_by');
     }
 
     public function orderItems(): HasMany
@@ -370,7 +381,7 @@ class Order extends Model
 
     public function scopePaid($query)
     {
-        return $query->whereColumn('amount_paid', '>=', 'total_selling_price');
+        return $query->whereColumn('amount_paid', '>=', 'total_selling_price')->where('total_selling_price', '>', 0);
     }
 
     public function scopePending($query)
@@ -425,22 +436,38 @@ class Order extends Model
             ->where('amount_paid', '>', 0);
     }
 
-    public function scopeSearch($query, $search)
+    public function scopeSearch(Builder $query, ?string $search): Builder
     {
-        if (empty($search)) {
+        if (blank($search)) {
             return $query;
         }
 
-        $search_term = '%' . strtolower($search) . '%';
+        $term = '%' . strtolower(trim($search)) . '%';
 
-        return $query->where(function ($q) use ($search_term) {
-            $q->whereRaw('LOWER(order_number) LIKE ?', [$search_term])
-            ->orWhereRaw('LOWER(customer_name) LIKE ?', [$search_term])
-            ->orWhereRaw('LOWER(customer_phone) LIKE ?', [$search_term])
-            ->orWhereRaw('LOWER(order_status) LIKE ?', [$search_term])
-            ->orWhereHas('user', function ($user_query) use ($search_term) {
-                $user_query->whereRaw('LOWER(name) LIKE ?', [$search_term])
-                ->orWhereRaw('LOWER(email) LIKE ?', [$search_term]);
+        return $query->where(function ($q) use ($term) {
+            // Direct columns
+            $q->whereRaw('LOWER(order_number) LIKE ?', [$term])
+            ->orWhereRaw('LOWER(order_channel) LIKE ?', [$term])
+            ->orWhereRaw('LOWER(customer_name) LIKE ?', [$term])
+            ->orWhereRaw('LOWER(customer_phone) LIKE ?', [$term])
+            ->orWhereRaw('LOWER(order_status) LIKE ?', [$term])
+
+            // Cashier (created_by) name / email
+            ->orWhereHas('createdBy', function ($sub) use ($term) {
+                $sub->whereRaw('LOWER(name) LIKE ?', [$term])
+                    ->orWhereRaw('LOWER(email) LIKE ?', [$term]);
+            })
+
+            // Updater (updated_by) name / email
+            ->orWhereHas('updatedBy', function ($sub) use ($term) {
+                $sub->whereRaw('LOWER(name) LIKE ?', [$term])
+                    ->orWhereRaw('LOWER(email) LIKE ?', [$term]);
+            })
+
+            // Customer user (user_id) — keep if you still want it
+            ->orWhereHas('user', function ($sub) use ($term) {
+                $sub->whereRaw('LOWER(name) LIKE ?', [$term])
+                    ->orWhereRaw('LOWER(email) LIKE ?', [$term]);
             });
         });
     }
@@ -452,7 +479,7 @@ class Order extends Model
         }
 
         // Everyone else (cashiers) sees only what they created
-        return $query->where('user_id', $user->id);
+        return $query->where('created_by', $user->id);
     }
 
     public function scopeRecent(Builder $query): Builder

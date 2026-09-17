@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
 import { Pencil, Trash2 } from '@lucide/vue';
-import { ref, computed } from 'vue';
+import { watch, computed, reactive, ref } from 'vue';
 import AppPageHeader from '@/components/custom/AppPageHeader.vue';
 import DeleteConfirmationDialog from '@/components/custom/DeleteConfirmation.vue';
 import Pagination from '@/components/custom/Pagination.vue';
@@ -25,6 +25,14 @@ interface Order {
     order_status_label: string;
     delivery_status: string;
     delivery_status_label: string;
+    created_by?: {
+        id: number;
+        name: string;
+    } | null;
+    updated_by?: {
+        id: number;
+        name: string;
+    } | null;
 }
 
 interface Props {
@@ -42,20 +50,81 @@ interface Props {
     filters: {
         search?: string;
         status?: string;
+        created_by?: string;
+        delivery_method?: string;
+        payment_status?: string;
+        from?: string;
+        to?: string;
     };
+    statuses: {value:string; label: string}[];
+    cashiers: { id: number; name: string }[];
 }
 
 const props = defineProps<Props>();
 
-const search = ref(props.filters?.search || '');
-const handleSearch = (value: string) => {
-    router.get(orderRoutes.index().url, {
-        search: value,
-    }, {
+const isSearching = ref(false);
+
+let searchTimeout: ReturnType<typeof setTimeout> | undefined;
+
+function onSearchInput() {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+        applyFilters();
+    }, 400); // 400ms feels right; 300 is snappier, 500 is safer on slow links
+}
+
+const filters = reactive({
+    search:          props.filters?.search          ?? '',
+    status:          props.filters?.status          ?? '',
+    created_by:      props.filters?.created_by      ?? '',
+    delivery_method: props.filters?.delivery_method ?? '',
+    payment_status:  props.filters?.payment_status  ?? '',
+    from:            props.filters?.from            ?? '',
+    to:              props.filters?.to              ?? '',
+});
+
+watch(() => props.filters, (next) => {
+    Object.assign(filters, {
+        // search: next.search ?? '', ← DON'T sync search back
+        status:          next.status          ?? '',
+        created_by:      next.created_by      ?? '',
+        delivery_method: next.delivery_method ?? '',
+        payment_status:  next.payment_status  ?? '',
+        from:            next.from            ?? '',
+        to:              next.to              ?? '',
+    });
+}, { deep: true });
+
+function applyFilters() {
+    const params = Object.fromEntries(
+        Object.entries(filters).filter(([, v]) => v !== '' && v !== null && v !== undefined)
+    );
+
+    router.get(orderRoutes.index().url, params, {
+        preserveState: true,
+        preserveScroll: true,
+        replace: true,
+    });
+}
+
+function clearFilters() {
+    clearTimeout(searchTimeout);
+
+    // Reset local state
+    filters.search          = '';
+    filters.status          = '';
+    filters.created_by      = '';
+    filters.delivery_method = '';
+    filters.payment_status  = '';
+    filters.from            = '';
+    filters.to              = '';
+
+    // Navigate to the clean URL
+    router.get(orderRoutes.index().url, {}, {
         preserveState: true,
         replace: true,
     });
-};
+}
 
 const getDisplayRange = computed(() => {
     const { current_page, per_page, total } = props.orders.meta;
@@ -65,7 +134,9 @@ const getDisplayRange = computed(() => {
     return { start, end, total };
 });
 
-const hasActiveFilters = computed(() => !!search.value);
+const hasActiveFilters = computed(() =>
+    Object.values(filters).some(v => v !== '' && v !== null && v !== undefined)
+);
 
 // Helper to get status color classes
 const getOrderStatusColor = (status: string) => {
@@ -113,12 +184,49 @@ const getPaymentStatusColor = (status: string) => {
 
     <AppPageHeader
         resourceName="Orders"
-        v-model="search"
+        v-model="filters.search"
         search-placeholder="Search by order number or customer phone number..."
         :create-url="orderRoutes.create().url"
         create-label="Order"
-        @search="handleSearch"
+        @search="onSearchInput"
     />
+
+    <div class="filters space-x-8">
+        <select v-model="filters.status" @change="applyFilters" class="border border-border p-2">
+            <option value="">All statuses</option>
+            <option v-for="s in statuses" :key="s.value" :value="s.value">{{ s.label }}</option>
+        </select>
+
+        <select v-model="filters.created_by" @change="applyFilters" class="border border-border p-2">
+            <option value="">All cashiers</option>
+            <option v-for="c in cashiers" :key="c.id" :value="String(c.id)">{{ c.name }}</option>
+        </select>
+
+        <select v-model="filters.delivery_method" @change="applyFilters" class="border border-border p-2">
+            <option value="">All methods</option>
+            <option value="shop">Shop pickup</option>
+            <option value="delivery">Delivery</option>
+        </select>
+
+        <select v-model="filters.payment_status" @change="applyFilters" class="border border-border p-2">
+            <option value="">All payments</option>
+            <option value="paid">Paid</option>
+            <option value="partially_paid">Partially paid</option>
+            <option value="unpaid">Unpaid</option>
+        </select>
+
+        <input type="date" v-model="filters.from" @change="applyFilters" />
+        <input type="date" v-model="filters.to" @change="applyFilters" />
+
+        <button
+            v-if="hasActiveFilters"
+            type="button"
+            class="clear-filters bg-red-600 text-white font-medium p-2 rounded-sm"
+            @click="clearFilters"
+        >
+            Clear filters
+        </button>
+    </div>
 
     <div class="table-wrapper">
         <Table>
@@ -134,6 +242,8 @@ const getPaymentStatusColor = (status: string) => {
                     <TableHead>Payment</TableHead>
                     <TableHead>Order</TableHead>
                     <TableHead>Delivery</TableHead>
+                    <TableHead>Cashier</TableHead>
+                    <TableHead>Updated</TableHead>
                     <TableHead class="actions">Actions</TableHead>
                 </TableRow>
             </TableHeader>
@@ -156,6 +266,8 @@ const getPaymentStatusColor = (status: string) => {
                     <TableCell :class="getDeliveryStatusColor(order.delivery_status)">
                         {{ order.delivery_status_label || 'N/A' }}
                     </TableCell>
+                    <TableCell>{{ order.created_by?.name ?? 'N/A' }}</TableCell>
+                    <TableCell>{{ order.updated_by?.name ?? 'N/A' }}</TableCell>
                     <TableCell class="actions w-20">
                         <div class="actions-wrapper">
                             <Link :href="orderRoutes.edit(order.uuid).url" class="action edit">

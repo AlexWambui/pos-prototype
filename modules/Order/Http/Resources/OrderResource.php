@@ -36,10 +36,10 @@ class OrderResource extends JsonResource
             'order_items' => $this->orderItems,
             'order_statuses' => $this->orderStatuses,
             'can_be_cancelled' => $this->canBeCancelled(),
-            'user'                => $this->whenLoaded('user', fn () => [
-                'id'   => $this->user->id,
-                'name' => $this->user->name,
-            ]),
+
+            'user'       => $this->whenLoaded('user',       fn () => $this->user?->only('id', 'name')),
+            'created_by' => $this->whenLoaded('createdBy',  fn () => $this->createdBy?->only('id', 'name')),
+            'updated_by' => $this->whenLoaded('updatedBy',  fn () => $this->updatedBy?->only('id', 'name')),
         ];
     }
 }
