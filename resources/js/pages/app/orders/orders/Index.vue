@@ -291,7 +291,7 @@ const getPaymentStatusColor = (status: string) => {
                 </TableRow>
 
                 <TableRow v-if="orders.data.length === 0">
-                    <TableCell colspan="9" class="blank-table-row">
+                    <TableCell colspan="20" class="blank-table-row">
                         No orders found.
                     </TableCell>
                 </TableRow>
