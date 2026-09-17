@@ -25,6 +25,7 @@ interface ProductImage {
 
 interface Product {
     id: number;
+    uuid: string;
     name: string;
     description: string | null;
     cost_price: string | null;
@@ -134,7 +135,7 @@ const submitForm = () => {
 
     form.post(
         productRoutes.update({
-            product: props.product.id
+            product: props.product.uuid
         }).url,
         {
             forceFormData: true,
