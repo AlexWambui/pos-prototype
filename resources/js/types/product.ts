@@ -5,6 +5,7 @@ export interface ProductImage {
 
 export interface Product {
     id: number;
+    uuid: string;
     name: string;
     slug: string;
     category_name: string;
