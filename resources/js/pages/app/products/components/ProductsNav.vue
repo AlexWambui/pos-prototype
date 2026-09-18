@@ -3,6 +3,7 @@ import { Link } from '@inertiajs/vue3';
 
 import productCategoryRoutes from '@/routes/product-categories';
 import productRoutes from '@/routes/products';
+import productInventoryRoutes from '@/routes/products-inventory';
 
 interface Props {
     currentPage: 'products' | 'discounts' | 'inventory' | 'product-categories';
@@ -13,6 +14,7 @@ defineProps<Props>();
 const links = [
     { name: 'Products', href: productRoutes.index().url, key: 'products' },
     { name: 'Categories', href: productCategoryRoutes.index(), key: 'product-categories' },
+    { name: 'Inventory', href: productInventoryRoutes.index(), key: 'products-inventory' },
 ];
 </script>
 

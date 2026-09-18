@@ -15,6 +15,7 @@ use Modules\Support\Concerns\HasUuid;
 use Modules\User\Enums\UserRoles;
 use Modules\User\Enums\UserStatuses;
 use Modules\Order\Models\Order;
+use Modules\Product\Models\InventoryMovement;
 
 class User extends Authenticatable
 {
@@ -61,6 +62,21 @@ class User extends Authenticatable
     public function updatedOrders(): HasMany
     {
         return $this->hasMany(Order::class, 'updated_by');
+    }
+
+    public function inventoryMovement(): HasMany
+    {
+        return $this->hasMany(InventoryMovement::class, 'user_id');
+    }
+
+    public function createdInventoryMovements(): HasMany
+    {
+        return $this->hasMany(InventoryMovement::class, 'created_by');
+    }
+
+    public function updatedInventoryMovements(): HasMany
+    {
+        return $this->hasMany(InventoryMovement::class, 'updated_by');
     }
 
     public function hasRole(string $role_name): bool

@@ -10,6 +10,7 @@ export interface Product {
     slug: string;
     category_name: string;
     description: string;
+    cost_price: number;
     price: number;
     compare_price: number | null;
     stock: number;
@@ -25,4 +26,9 @@ export interface Product {
     is_active: boolean;
     created_at: string;
     updated_at: string;
+    track_inventory: boolean;
+    current_stock: number;
+    low_stock_threshold: number;
+    stock_status: string;
+    stock_badge_class: string;
 }

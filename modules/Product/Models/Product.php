@@ -8,8 +8,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
 use Modules\Support\Concerns\HasUuid;
 use Modules\Support\Concerns\HasSlug;
+use Modules\Product\Enums\InventoryMovementTypes;
+use Modules\Product\Exceptions\InsufficientStockException;
+use Modules\Product\Exceptions\StockTrackingDisabledException;
 
 class Product extends Model
 {
@@ -21,6 +25,10 @@ class Product extends Model
         'is_active' => 'boolean',
         'is_featured' => 'boolean',
         'is_new' => 'boolean',
+        'current_stock' => 'decimal:2',
+        'low_stock_threshold' => 'decimal:2',
+        'cost_price' => 'decimal:2',
+        'price' => 'decimal:2',
     ];
 
     protected $appends = [
@@ -104,6 +112,11 @@ class Product extends Model
         return $this->images->first()?->image_url ?? asset('assets/images/general/default-image.webp');
     }
 
+    public function inventoryMovements(): HasMany
+    {
+        return $this->hasMany(InventoryMovement::class, 'product_id');
+    }
+
     public function scopeSearch(Builder $query, $search): Builder
     {
         if (!$search) {
@@ -132,7 +145,7 @@ class Product extends Model
         return (float) $this->current_stock >= (float) $quantity;
     }
 
-    public function decrementStock(int $quantity): bool
+    public function decrementStock(float $quantity): bool
     {
         if ($quantity <= 0) {
             throw new \InvalidArgumentException('Quantity must be positive');
@@ -144,5 +157,72 @@ class Product extends Model
             ->decrement('current_stock', $quantity);
 
         return $affected > 0;
+    }
+
+    private function ensureInventoryIsTracked(): void
+    {
+        if (!$this->tracksInventory()) {
+            throw StockTrackingDisabledException::forProduct($this);
+        }
+    }
+
+    public function addStock(
+        float $quantity, 
+        InventoryMovementTypes $type, 
+        ?string $notes = null, 
+        ?array $metadata = null
+    ): InventoryMovement
+    {
+        $this->ensureInventoryIsTracked();
+
+        return $this->updateStock(
+            newQuantity: (float) $this->current_stock + $quantity,
+            type: $type,
+            notes: $notes,
+            metadata: $metadata,
+        );
+    }
+
+    public function updateStock(float $newQuantity, InventoryMovementTypes $type, ?string $notes = null, ?array $metadata = null): InventoryMovement
+    {
+        $this->ensureInventoryIsTracked();
+        
+        $oldQuantity = (float) $this->current_stock;
+        $quantityChange = $newQuantity - $oldQuantity;
+        
+        return DB::transaction(function () use ($newQuantity, $oldQuantity, $quantityChange, $type, $notes, $metadata) {
+            $movement = InventoryMovement::create([
+                'product_id' => $this->id,
+                'type' => $type,
+                'quantity' => $quantityChange,
+                'quantity_before' => $oldQuantity,
+                'quantity_after' => $newQuantity,
+                'notes' => $notes,
+                'metadata' => $metadata,
+            ]);
+
+            $this->current_stock = $newQuantity;
+            $this->save();
+
+            return $movement;
+        });
+    }
+
+    public function removeStock(float $quantity, InventoryMovementTypes $type, ?string $notes = null, ?array $metadata = null): InventoryMovement
+    {
+        $this->ensureInventoryIsTracked();
+
+        if (!$this->hasStockFor($quantity)) {
+            throw new InsufficientStockException(
+                "Only {$this->current_stock} units available for '{$this->name}'"
+            );
+        }
+
+        return $this->updateStock(
+            newQuantity: (float) $this->current_stock - $quantity,
+            type: $type,
+            notes: $notes,
+            metadata: $metadata,
+        );
     }
 }
