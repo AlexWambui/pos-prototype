@@ -217,11 +217,13 @@ const filteredProducts = computed(() => {
 
     return props.products.data.filter((product) => {
         const name = product.name?.toLowerCase() ?? '';
+        const barcode = product.barcode?.toLowerCase() ?? '';
         const sku = (product as any).sku?.toLowerCase() ?? '';
         const category = (product as any).category?.name?.toLowerCase() ?? '';
         
         return name.includes(query) 
             || sku.includes(query) 
+            || barcode.includes(query)
             || category.includes(query);
     });
 });

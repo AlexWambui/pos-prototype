@@ -17,6 +17,8 @@ class ProductPOSResource extends JsonResource
         return [
             'id' => $this->id,
             'name' => $this->name,
+            'sku' => $this->sku,
+            'barcode' => $this->barcode,
             'thumbnail_url' => $this->thumbnail_url,
             'cost_price' => $this->cost_price,
             'price' => $this->price,
