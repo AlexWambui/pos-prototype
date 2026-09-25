@@ -6,10 +6,10 @@ import { Input } from '@/components/ui/input';
 import InputError from '@/components/InputError.vue';
 import Button from '@/components/ui/button/Button.vue';
 import Textarea from '@/components/ui/textarea/Textarea.vue';
+import productInventoryRoutes from '@/routes/products-inventory';
 
 const props = defineProps<{
-    shop: { id: number; name: string; slug: string };
-    product: { id: number; name: string; sku: string; current_stock: number };
+    product: { id: number; uuid: string; name: string; sku: string; current_stock: number };
     movement_types: {
         add: Record<number, string>;
         remove: Record<number, string>;
@@ -37,10 +37,7 @@ const newStockPreview = computed(() => {
 });
 
 const submit = () => {
-    form.put(myShopInventoryRoutes.update.url({ 
-        shop: props.shop.slug, 
-        product: props.product.id 
-    }), {
+    form.put(productInventoryRoutes.update.url(props.product.uuid), {
         preserveScroll: true,
     });
 };
@@ -51,7 +48,7 @@ const submit = () => {
 
     <div class="max-w-2xl mx-auto py-6">
         <div class="mb-6">
-            <Link :href="myShopInventoryRoutes.index(shop.slug)" class="text-sm text-gray-500 hover:text-gray-700">
+            <Link :href="productInventoryRoutes.index()" class="text-sm text-gray-500 hover:text-gray-700">
                 ← Back to Inventory
             </Link>
             <h2 class="text-2xl font-bold mt-2">Remove Stock: {{ product.name }}</h2>
@@ -128,7 +125,7 @@ const submit = () => {
                     {{ form.processing ? 'Processing...' : 'Remove Stock' }}
                 </Button>
 
-                <Link :href="myShopInventoryRoutes.index(shop.slug)">
+                <Link :href="productInventoryRoutes.index()">
                     <Button type="button" variant="outline">Cancel</Button>
                 </Link>
             </div>
