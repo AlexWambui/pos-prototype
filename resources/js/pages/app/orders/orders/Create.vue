@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useForm, Head, router } from '@inertiajs/vue3';
 import { computed, watch, ref, onMounted, onUnmounted, nextTick } from 'vue';
+import { Search } from '@lucide/vue';
 import axios from 'axios';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
@@ -274,7 +275,7 @@ onUnmounted(() => {
                     @keydown.esc="searchQuery = ''"
                 />
                 <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">
-                    🔍
+                    <Search class="w-4 h-4" />
                 </span>
                 <button
                     v-if="searchQuery"
