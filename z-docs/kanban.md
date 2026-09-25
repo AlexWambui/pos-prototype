@@ -1,13 +1,7 @@
 # POS Kanban
 
-✅ - Done
-❌ - Not started
-⚠️ - Urgent and need to be worked on now
-🔥 - System down, fix now
-
 Authentication & Authorization
 
-❌ Session timeout after 30 mins of inactivity
 ✅ Email and password authentication
 ✅ Role-based access control (Super Admin, Admin, Cashier) (urgent - blocks UI)
 ✅ Login/Logout functionality
@@ -60,6 +54,7 @@ Customers
 
 Order Management
 
+❌ product inventory can be updated and set to system as the updater after an order is placed successfully.
 ❌ Payment processing (Cash, Card, QR) (urgent)
 ❌ Payments can be adjusted or updated.
 ❌ Receipt generation with order #, date, items, totals
@@ -72,12 +67,12 @@ Order Management
 
 Product Management
 
-❌ Products can be easily searched for (using: product.name or product.barcode)
-✅ Inventory / stock management
-❌ Low stock alerts (when < 5 items)
+✅ Products can be easily searched for (using: product.name or product.barcode)
+🔥 notification alert for low stock products
 ❌ Bulk import/export (CSV)
-🔥 product track_inventory attribute can be updated to true or false
-🔥 notification for when products have low stock
+❌ Inventory history: updated by and notes should be updated correctly
+✅ product track_inventory attribute can be updated to true or false
+✅ Inventory / stock management
 ✅ Product categories CRUD
 ✅ Product CRUD with name, price, SKU, category (urgent - data foundation)
 ✅ Stock tracking (deduct on sale) (urgent)
@@ -85,8 +80,7 @@ Product Management
 
 Infrastructure
 
-❌ Database schema & migrations (urgent)
-❌ Basic error handling & validation (urgent)
+✅ Database schema & migrations (urgent)
 ❌ Responsive UI (works on tablet/desktop)
 ❌ Seed data for categories & demo products
 ❌ .env configuration for production
@@ -104,9 +98,10 @@ Out of Scope (Post-MVP)
 
 Immediate Sprint
 
-❌ Database schema design
-❌ JWT auth + RBAC
-❌ Product CRUD + stock
-❌ Cart + checkout + payment
-❌ Basic product listing (R for cashiers)
-❌ Deploy to staging
+❌ payment integration
+✅ Database schema design
+✅ JWT auth + RBAC
+✅ Product CRUD + stock
+✅ Cart + checkout
+✅ Basic product listing (R for cashiers)
+✅ Deploy to staging
