@@ -35,12 +35,18 @@ class ProductRequest extends FormRequest
                 'max:100',
                 Rule::unique('products', 'sku')->ignore($this->route('product')?->id)
             ],
+            'barcode' => [
+                'nullable', 
+                'string', 
+                'max:100',
+            ],
             'description' => ['nullable', 'string'],
             'cost_price' => ['nullable', 'numeric', 'min:0'],
             'price' => ['required', 'numeric', 'min:0'],
             'is_featured' => ['boolean'],
             'is_active' => ['boolean'],
             'is_new' => ['boolean'],
+            'track_inventory' => ['boolean'],
             'product_category_id' => ['nullable', 'exists:product_categories,id'],
             'images' => ['nullable', 'array', 'max:5'],
             'images.*' => ['image', 'mimes:jpg,jpeg,png,gif,svg,webp', 'max:2048'],

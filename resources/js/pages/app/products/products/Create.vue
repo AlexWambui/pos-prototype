@@ -27,9 +27,11 @@ const form = useForm({
     cost_price: '',
     price: '',
     sku: '',
+    barcode: '',
     is_featured: false,
     is_active: true,
     is_new: false,
+    track_inventory: false,
     product_category_id: null as number | null,
     images: [] as File[],
 });
@@ -163,6 +165,17 @@ const submitForm = () => {
                         />
                         <InputError :message="form.errors.sku" />
                     </div>
+
+                    <div class="inputs-group">
+                        <Label for="barcode">Barcode</Label>
+                        <Input
+                            id="barcode"
+                            v-model="form.barcode"
+                            type="text"
+                            placeholder="3216911047"
+                        />
+                        <InputError :message="form.errors.barcode" />
+                    </div>
                 </div>
 
                 <div class="inputs-group-wrapper">
@@ -202,7 +215,7 @@ const submitForm = () => {
                     <InputError :message="form.errors.description" />
                 </div>
 
-                <div class="inputs-group-wrapper-3">
+                <div class="inputs-group-wrapper-4">
                     <div class="inputs-group">
                         <div class="flex items-center gap-2">
                             <input type="hidden" name="is_active" value="0" />
@@ -242,6 +255,20 @@ const submitForm = () => {
                                 class="w-4 h-4 rounded"
                             />
                             <Label for="is_new">New</Label>
+                        </div>
+                    </div>
+
+                    <div class="inputs-group">
+                        <div class="flex items-center gap-2">
+                            <input type="hidden" name="track_inventory" value="0" />
+                            <input 
+                                type="checkbox" 
+                                id="track_inventory" 
+                                v-model="form.track_inventory"
+                                value="1"
+                                class="w-4 h-4 rounded"
+                            />
+                            <Label for="track_inventory">Track Inventory</Label>
                         </div>
                     </div>
                 </div>

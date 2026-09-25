@@ -31,9 +31,11 @@ interface Product {
     cost_price: string | null;
     price: string;
     sku: string | null;
+    barcode: string | null;
     is_featured: boolean;
     is_active: boolean;
     is_new: boolean;
+    track_inventory: boolean;
     product_category_id: number | null;
     images: ProductImage[];
 }
@@ -55,9 +57,11 @@ const form = useForm({
     cost_price: props.product.cost_price || '',
     price: props.product.price,
     sku: props.product.sku || '',
+    barcode: props.product.barcode || '',
     is_featured: props.product.is_featured,
     is_active: props.product.is_active,
     is_new: props.product.is_new,
+    track_inventory: props.product.track_inventory,
     product_category_id: props.product.product_category_id,
     images: [] as File[],
     images_to_delete: [] as number[],
@@ -205,6 +209,17 @@ const submitForm = () => {
                         />
                         <InputError :message="form.errors.sku" />
                     </div>
+
+                    <div class="inputs-group">
+                        <Label for="barcode">Barcode</Label>
+                        <Input
+                            id="barcode"
+                            v-model="form.barcode"
+                            type="text"
+                            placeholder="3216911047"
+                        />
+                        <InputError :message="form.errors.barcode" />
+                    </div>
                 </div>
 
                 <div class="inputs-group-wrapper">
@@ -245,7 +260,7 @@ const submitForm = () => {
                     <InputError :message="form.errors.description" />
                 </div>
 
-                <div class="inputs-group-wrapper-3">
+                <div class="inputs-group-wrapper-4">
                     <div class="inputs-group">
                         <div class="flex items-center gap-2">
                             <input type="hidden" name="is_active" value="0" />
@@ -285,6 +300,20 @@ const submitForm = () => {
                                 class="w-4 h-4 rounded"
                             />
                             <Label for="is_new">New</Label>
+                        </div>
+                    </div>
+
+                    <div class="inputs-group">
+                        <div class="flex items-center gap-2">
+                            <input type="hidden" name="track_inventory" value="0" />
+                            <input 
+                                type="checkbox" 
+                                id="track_inventory" 
+                                v-model="form.track_inventory"
+                                value="1"
+                                class="w-4 h-4 rounded"
+                            />
+                            <Label for="track_inventory">Track Inventory</Label>
                         </div>
                     </div>
                 </div>

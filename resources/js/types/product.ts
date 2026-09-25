@@ -15,6 +15,7 @@ export interface Product {
     compare_price: number | null;
     stock: number;
     sku: string;
+    barcode: string;
     category: string;
     tags: string[];
     thumbnail_url: string;

@@ -83,7 +83,7 @@ const getDisplayRange = computed(() => {
 
 const hasActiveFilters = computed(() => !!search.value);
 
-const toggleAttribute = async (product: Product, attribute: 'is_featured' | 'is_new' | 'is_active') => {
+const toggleAttribute = async (product: Product, attribute: 'is_featured' | 'is_new' | 'is_active' | 'track_inventory') => {
     const currentValue = product[attribute];
     const newValue = !currentValue;
     
@@ -133,6 +133,8 @@ const getTagClasses = (type: string, value: boolean) => {
             return `${baseClasses} bg-green-500 text-white hover:bg-green-600`;
         case 'is_active':
             return `${baseClasses} bg-blue-500 text-white hover:bg-blue-600`;
+        case 'track_inventory':
+            return `${baseClasses} bg-blue-500 text-white hover:bg-blue-600`;
         default:
             return baseClasses;
     }
@@ -180,7 +182,7 @@ const truncateDescription = (text: string, maxLength: number = 60): string => {
     <AppPageHeader
         resourceName="Products"
         v-model="search"
-        search-placeholder="Search by name..."
+        search-placeholder="Search by name, sku or barcode..."
         create-url="/products/create"
         create-label="Product"
         @search="handleSearch"
@@ -206,8 +208,9 @@ const truncateDescription = (text: string, maxLength: number = 60): string => {
                     <TableHead>Image</TableHead>
                     <TableHead>Product</TableHead>
                     <TableHead>SKU</TableHead>
+                    <TableHead>Barcode</TableHead>
                     <TableHead>Price (Ksh)</TableHead>
-                    <TableHead class="description-col">Description</TableHead>
+                    <TableHead>Inventory</TableHead>
                     <TableHead>Category</TableHead>
                     <TableHead class="tags">Tags</TableHead>
                     <TableHead class="actions">Actions</TableHead>
@@ -232,13 +235,9 @@ const truncateDescription = (text: string, maxLength: number = 60): string => {
                         </span>
                     </TableCell>
                     <TableCell>{{ product.sku ?? '-' }}</TableCell>
+                    <TableCell>{{ product.barcode ?? '-' }}</TableCell>
                     <TableCell>{{ formatPrice(product.price) }}</TableCell>
-                    <TableCell 
-                        class="description-col max-w-50 truncate cursor-help" 
-                        :title="product.description || 'No description'"
-                    >
-                        {{ truncateDescription(product.description, 60) }}
-                    </TableCell>
+                    <TableCell>{{ product.current_stock }}</TableCell>
                     <TableCell>{{ product.category_name }}</TableCell>
                     <TableCell class="tags min-w-50 w-45">
                         <div class="tags-wrapper flex flex-wrap gap-4">
@@ -270,6 +269,15 @@ const truncateDescription = (text: string, maxLength: number = 60): string => {
                             >
                                 <Loader2 v-if="isLoading(product, 'is_active')" class="w-3 h-3 animate-spin" />
                                 <span v-else>Active</span>
+                            </button>
+
+                            <button
+                                @click="toggleAttribute(product, 'track_inventory')"
+                                :disabled="isLoading(product, 'track_inventory')"
+                                :class="getTagClasses('track_inventory', product.track_inventory)"
+                            >
+                                <Loader2 v-if="isLoading(product, 'track_inventory')" class="w-3 h-3 animate-spin" />
+                                <span v-else> Track Inventory</span>
                             </button>
                         </div>
                     </TableCell>

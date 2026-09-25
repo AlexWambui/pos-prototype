@@ -21,6 +21,7 @@ class ProductIndexPageResource extends JsonResource
             'name' => $this->name,
             'slug' => $this->slug,
             'sku' => $this->sku,
+            'barcode' => $this->barcode,
             'price' => $this->price,
             'cost_price' => $this->cost_price,
             'has_discount' => $this->has_discount,
@@ -31,6 +32,7 @@ class ProductIndexPageResource extends JsonResource
             'description' => $this->description,
             'stock' => 30, // TODO: use accurate stock
             'track_inventory' => (bool) $this->track_inventory,
+            'current_stock' => $this->current_stock,
             'low_stock_threshold' => $this->low_stock_threshold,
             'is_featured' => (bool) $this->is_featured,
             'is_new' => (bool) $this->is_new,

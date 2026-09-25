@@ -25,6 +25,7 @@ class Product extends Model
         'is_active' => 'boolean',
         'is_featured' => 'boolean',
         'is_new' => 'boolean',
+        'track_inventory' => 'boolean',
         'current_stock' => 'decimal:2',
         'low_stock_threshold' => 'decimal:2',
         'cost_price' => 'decimal:2',
@@ -123,11 +124,16 @@ class Product extends Model
             return $query;
         }
 
-        $searchTerm = strtolower($search);
-        
-        return $query->where(function (Builder $q) use ($searchTerm) {
-            $q->whereRaw('LOWER(name) LIKE ?', ["%{$searchTerm}%"])
-                ->orWhereRaw('LOWER(description) LIKE ?', ["%{$searchTerm}%"]);
+        $term = trim($search);
+
+        if ($term === '') {
+            return $query;
+        }
+
+        return $query->where(function (Builder $q) use ($term) {
+            $q->where('name', 'like', "%{$term}%")
+            ->orWhere('sku', 'like', "%{$term}%")
+            ->orWhere('barcode', 'like', "{$term}%");
         });
     }
 

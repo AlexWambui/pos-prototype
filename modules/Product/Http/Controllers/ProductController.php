@@ -18,15 +18,8 @@ class ProductController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Product::query();
-
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                ->orWhere('slug', 'like', "%{$search}%");
-            });
-        }
+        $query = Product::query()
+            ->search($request->search);
 
         if ($request->filled('status')) {
             $query->where('is_active', $request->status === 'active');
@@ -202,7 +195,7 @@ class ProductController extends Controller
     public function toggleAttribute(Request $request, Product $product)
     {
         $request->validate([
-            'attribute' => 'required|in:is_featured,is_new,is_active',
+            'attribute' => 'required|in:is_featured,is_new,is_active,track_inventory',
             'value' => 'required|boolean'
         ]);
 

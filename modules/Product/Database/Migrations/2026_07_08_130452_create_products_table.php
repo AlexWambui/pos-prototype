@@ -17,6 +17,7 @@ return new class extends Migration
             $table->string('name', 200);
             $table->string('slug')->unique();
             $table->string('sku')->nullable()->unique();
+            $table->string('barcode')->nullable();
             $table->text('description')->nullable();
 
             $table->string('type')->default('goods');
@@ -39,6 +40,8 @@ return new class extends Migration
 
             $table->index(['type', 'is_active']);
             $table->index('sku');
+            $table->index('name');
+            $table->index('barcode');
         });
     }
 
