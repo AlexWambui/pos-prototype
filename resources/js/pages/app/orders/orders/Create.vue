@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useForm, Head, router } from '@inertiajs/vue3';
 import { computed, watch, ref, onMounted, onUnmounted, nextTick } from 'vue';
+import axios from 'axios';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -33,8 +34,6 @@ const props = defineProps<{
     products: { data: Product[] };
     recent_orders: { data: RecentOrder[] };
     can_view_all: boolean;
-    orderStatuses: Record<string, string>;
-    deliveryStatuses: Record<string, string>;
 }>();
 
 const statusClasses: Record<string, string> = {
@@ -50,20 +49,17 @@ const statusClass = (status: string) => statusClasses[status] ?? 'bg-gray-100 te
 
 // --- STATE ---
 const cart = ref<CartItemPayload[]>([]);
-const deliveryMethod = ref<'shop' | 'delivery'>('shop');
-const selectedArea = ref('');
-const deliveryCost = ref(0);
 
 // --- INERTIA FORM ---
 const form = useForm({
-    customer_name: '',
+    customer_name: 'Walk-in',
     customer_phone: '',
     customer_email: '',
     delivery_method: 'shop',
     order_channel: 'pos',
-    location: '',
-    area: '',
-    address: '',
+    location: 'shop',
+    area: 'shop',
+    address: 'shop',
     delivery_cost: 0,
     amount_paid: 0,
     payments: [{ amount: 0, method: 'mpesa' }],
@@ -71,53 +67,55 @@ const form = useForm({
 });
 
 // --- COMPUTED TOTALS ---
-const subtotal = computed(() => {
-    return cart.value.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-});
+const subtotal = computed(() => cart.value.reduce((sum, item) => sum + (item.price * item.quantity), 0));
 
-const totalItemsCount = computed(() => {
-    return cart.value.reduce((sum, item) => sum + item.quantity, 0);
-});
+const totalItemsCount = computed(() => cart.value.reduce((sum, item) => sum + item.quantity, 0));
 
-const total = computed(() => {
-    return subtotal.value + deliveryCost.value;
-});
+const total = computed(() => subtotal.value);
 
-// --- WATCHERS ---
-// Update the form delivery_cost whenever deliveryCost changes
-watch(deliveryCost, (newVal) => {
-    form.delivery_cost = newVal;
-});
+// --- CUSTOMER LOOKUP BY PHONE ---
+const lookupLoading = ref(false);
+const lookupError   = ref<string | null>(null);
+let lookupDebounce: number | undefined;
 
-// Watch for Area changes (Mock DB fetch)
-watch(selectedArea, async (newArea) => {
-    if (!newArea) {
-        deliveryCost.value = 0;
+const lookupCustomer = (phone: string) => {
+    window.clearTimeout(lookupDebounce);
 
+    if (!phone || phone.length < 7) {
+        // Reset to walk-in defaults
+        form.customer_name = 'Walk-in';
+        form.customer_email = '';
+        lookupError.value = null;
         return;
     }
 
-    // In a real scenario, you'd fetch this from your backend
-    const mockCosts: Record<string, number> = {
-        'Kilimani': 250,
-        'Lavington': 300,
-        'Westlands': 350
-    };
-    deliveryCost.value = mockCosts[newArea] || 150;
-});
+    lookupDebounce = window.setTimeout(async () => {
+        lookupLoading.value = true;
+        lookupError.value = null;
+        try {
+            const { data } = await axios.get('/customers/lookup', {
+                params: { phone },
+            });
 
-// Watch deliveryMethod to clear delivery fields if switched to shop
-watch(deliveryMethod, (newMethod) => {
-    form.delivery_method = newMethod;
-    
-    if (newMethod === 'shop') {
-        form.location = '';
-        form.area = '';
-        form.address = '';
-        selectedArea.value = '';
-        deliveryCost.value = 0;
-    }
-});
+            if (data?.name) {
+                form.customer_name  = data.name;
+                form.customer_email = data.email ?? '';
+            } else {
+                form.customer_name  = 'Walk-in';
+                form.customer_email = '';
+                lookupError.value = 'No account found — will be saved as walk-in.';
+            }
+        } catch (e) {
+            form.customer_name  = 'Walk-in';
+            form.customer_email = '';
+            lookupError.value = 'Lookup failed — will be saved as walk-in.';
+        } finally {
+            lookupLoading.value = false;
+        }
+    }, 350);
+};
+// Watch the phone field and trigger lookup
+watch(() => form.customer_phone, (val) => lookupCustomer(val));
 
 // --- ACTIONS ---
 const addToCart = (product: Product) => {
@@ -163,20 +161,6 @@ const removePaymentRow = (index: number) => {
     payments.value.splice(index, 1);
 }
 
-const isAnonymous = ref(false);
-
-watch(isAnonymous, (val) => {
-    if (val) {
-        form.customer_name = 'Guest';
-        form.customer_phone = 'na';
-        form.customer_email = 'guest@gmail.com';
-    } else {
-        form.customer_name = '';
-        form.customer_phone = '';
-        form.customer_email = '';
-    }
-});
-
 const submitOrder = () => {
     // Populate the cart_items in the form before submitting
     // Send cart items with quantity
@@ -184,7 +168,6 @@ const submitOrder = () => {
         ...item,
         quantity: item.quantity,
     }));
-
     form.payments = payments.value;
 
     form.post(orderRoutes.store.url(), {
@@ -192,11 +175,12 @@ const submitOrder = () => {
         onSuccess: () => {
             // Reset state after success
             cart.value = [];
-            deliveryMethod.value = 'shop';
-            deliveryCost.value = 0;
-            selectedArea.value = '';
             payments.value = [{amount: 0, method: 'mpesa'}];
+            form.amount_paid = payments.value.reduce((s, p) => s + Number(p.amount || 0), 0);
             form.reset(); 
+            form.customer_name = 'Walk-in';
+            form.customer_phone = '';
+            form.customer_email = '';
 
             router.reload({only: ['recent_orders', 'products']})
         }
@@ -259,6 +243,7 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
+    window.clearTimeout(lookupDebounce);
     window.removeEventListener('keydown', handleKeydown);
     clearInterval(interval);
 });
@@ -418,97 +403,30 @@ onUnmounted(() => {
 
             <!-- Order Form -->
             <form @submit.prevent="submitOrder" class="space-y-4 border-t pt-4">
-
-                <div class="grid grid-cols-2 gap-3 items-start">
-                    <div>
-                        <Label for="order_channel" class="text-xs">Order Channel</Label>
-                        <Select v-model="form.order_channel">
-                            <SelectTrigger>
-                                <SelectValue placeholder="Select Channel" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectGroup>
-                                    <SelectItem value="pos">POS</SelectItem>
-                                    <SelectItem value="walk_in">Walk In</SelectItem>
-                                    <SelectItem value="whatsapp">WhatsApp</SelectItem>
-                                    <SelectItem value="tiktok">TikTok</SelectItem>
-                                </SelectGroup>
-                            </SelectContent>
-                        </Select>
-                        <InputError :message="form.errors.order_channel" />
-                    </div>
-
-                    <div class="flex items-center gap-2 mb-2">
-                        <input type="checkbox" id="isAnonymous" v-model="isAnonymous" class="w-4 h-4 rounded" />
-                        <Label for="isAnonymous" class="text-sm cursor-pointer">Walk-in Customer (Skip Details)</Label>
-                    </div>
-                </div>
-                
-                <!-- Customer Info -->
+                <!-- Customer Phone (lookup) -->
                 <div class="space-y-3">
-                    <h3 class="font-semibold text-sm text-gray-700">Customer Information</h3>
-                    <div class="grid grid-cols-2 gap-3">
-                        <div class="col-span-2 sm:col-span-1">
-                            <Label for="customer_name" class="text-xs">Name</Label>
-                            <Input id="customer_name" v-model="form.customer_name" required />
-                            <InputError :message="form.errors.customer_name" />
-                        </div>
-                        <div class="col-span-2 sm:col-span-1">
-                            <Label for="customer_phone" class="text-xs">Phone</Label>
-                            <Input id="customer_phone" v-model="form.customer_phone" required />
-                            <InputError :message="form.errors.customer_phone" />
-                        </div>
-                        <div class="col-span-2">
-                            <Label for="customer_email" class="text-xs">Email (Optional)</Label>
-                            <Input id="customer_email" v-model="form.customer_email" type="email" />
-                            <InputError :message="form.errors.customer_email" />
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Delivery Method -->
-                <div class="space-y-2">
-                    <h3 class="font-semibold text-sm text-gray-700">Delivery Method</h3>
-                    <div class="flex gap-4">
-                        <Label class="flex items-center gap-2 text-sm cursor-pointer">
-                            <input type="radio" value="shop" v-model="deliveryMethod" /> Shop Pickup
-                        </Label>
-                        <Label class="flex items-center gap-2 text-sm cursor-pointer">
-                            <input type="radio" value="delivery" v-model="deliveryMethod" /> Delivery
-                        </Label>
-                    </div>
-                    <InputError :message="form.errors.delivery_method" />
-                </div>
-
-                <!-- Delivery Details (Conditional) -->
-                <div v-if="deliveryMethod === 'delivery'" class="bg-gray-50 p-3 rounded border space-y-3">
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <Label for="location" class="text-xs">Location</Label>
-                            <Input id="location" v-model="form.location" />
-                            <InputError :message="form.errors.location" />
-                        </div>
-                        <div>
-                            <Label for="area" class="text-xs">Area (Fetches Cost)</Label>
-                            <Select v-model="selectedArea">
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select Area" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectGroup>
-                                        <SelectItem value="Kilimani">Kilimani</SelectItem>
-                                        <SelectItem value="Lavington">Lavington</SelectItem>
-                                        <SelectItem value="Westlands">Westlands</SelectItem>
-                                    </SelectGroup>
-                                </SelectContent>
-                            </Select>
-                            <InputError :message="form.errors.area" />
-                        </div>
-                    </div>
+                    <h3 class="font-semibold text-sm text-gray-700">Customer</h3>
                     <div>
-                        <Label for="address" class="text-xs">Address</Label>
-                        <Input id="address" v-model="form.address" />
-                        <InputError :message="form.errors.address" />
+                        <Label for="customer_phone" class="text-xs">Phone Number</Label>
+                        <div class="relative">
+                            <Input
+                                id="customer_phone"
+                                v-model="form.customer_phone"
+                                placeholder="e.g. 0712345678"
+                                required
+                            />
+                            <Spinner
+                                v-if="lookupLoading"
+                                class="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4"
+                            />
+                        </div>
+                        <p v-if="lookupError" class="text-[11px] text-amber-600 mt-1">
+                            {{ lookupError }}
+                        </p>
+                        <p v-else-if="form.customer_name !== 'Walk-in'" class="text-[11px] text-green-600 mt-1">
+                            ✓ Matched: {{ form.customer_name }}
+                        </p>
+                        <InputError :message="form.errors.customer_phone" />
                     </div>
                 </div>
 
@@ -516,12 +434,12 @@ onUnmounted(() => {
                 <div class="space-y-2 mt-2">
                     <h3 class="font-semibold text-sm text-gray-700">Payments</h3>
                     <div v-for="(payment, index) in payments" :key="index" class="flex gap-2">
-                        <Input 
-                            v-model="payment.amount" 
-                            type="number" 
-                            step="0.01" 
-                            placeholder="Amount" 
-                            class="w-1/2" 
+                        <Input
+                            v-model="payment.amount"
+                            type="number"
+                            step="0.01"
+                            placeholder="Amount"
+                            class="w-1/2"
                         />
                         <Select v-model="payment.method">
                             <SelectTrigger class="w-1/2">
@@ -534,7 +452,14 @@ onUnmounted(() => {
                                 </SelectGroup>
                             </SelectContent>
                         </Select>
-                        <Button type="button" variant="destructive" size="icon" class="h-9 w-9" @click="removePaymentRow(index)" v-if="payments.length > 1">
+                        <Button
+                            type="button"
+                            variant="destructive"
+                            size="icon"
+                            class="h-9 w-9"
+                            @click="removePaymentRow(index)"
+                            v-if="payments.length > 1"
+                        >
                             ✕
                         </Button>
                     </div>
@@ -543,23 +468,24 @@ onUnmounted(() => {
                     </Button>
                 </div>
 
-                <!-- Summary & Payment -->
+                <!-- Summary -->
                 <div class="bg-background text-foreground p-3 rounded space-y-1">
-                    <div class="flex justify-between text-sm"><span>Subtotal</span><span>{{ formatPrice(subtotal) }}</span></div>
-                    <div class="flex justify-between text-sm"><span>Delivery</span><span>{{ formatPrice(deliveryCost) }}</span></div>
-                    <div class="flex justify-between font-bold text-base border-t pt-1 mt-1"><span>Total</span><span>{{ formatPrice(total) }}</span></div>
-
-                    <!-- Show what statuses will be applied -->
+                    <div class="flex justify-between text-sm">
+                        <span>Subtotal</span><span>{{ formatPrice(subtotal) }}</span>
+                    </div>
+                    <div class="flex justify-between font-bold text-base border-t pt-1 mt-1">
+                        <span>Total</span><span>{{ formatPrice(total) }}</span>
+                    </div>
                     <div class="mt-2 pt-2 border-t text-xs text-gray-500">
-                        <p>Order will be: <span class="font-medium">{{ deliveryMethod === 'shop' ? 'Ready for Pickup' : 'Pending' }}</span></p>
-                        <p>Delivery: <span class="font-medium">Pending</span></p>
+                        <p>Order: <span class="font-medium">Ready for Pickup</span></p>
+                        <p>Delivery: <span class="font-medium">Picked Up</span></p>
                     </div>
                 </div>
 
-                <Button 
-                    type="submit" 
+                <Button
+                    type="submit"
                     class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 mt-2"
-                    :disabled="form.processing || cart.length === 0"
+                    :disabled="form.processing || cart.length === 0 || lookupLoading"
                 >
                     <Spinner v-if="form.processing" class="mr-2" />
                     Confirm Order

@@ -104,12 +104,12 @@ class OrderController extends Controller
                 // Determine initial order status
                 $initialOrderStatus = $validated['delivery_method'] === 'delivery' 
                     ? OrderStatusEnum::PENDING 
-                    : OrderStatusEnum::PROCESSING;
+                    : OrderStatusEnum::READY_FOR_PICKUP;
 
                 // delivery details
-                $delivery_location = $validated['delivery_method'] === 'shop' ? 'shop' : $validated['location'];
-                $delivery_area = $validated['delivery_method'] === 'shop' ? 'shop' : $validated['area'];
-                $delivery_address = $validated['delivery_method'] === 'shop' ? 'shop' : $validated['address'];
+                $delivery_location = 'shop';
+                $delivery_area = 'shop';
+                $delivery_address = 'shop';
 
                 // --- CREATE THE ORDER ---
                 $order = Order::create([
@@ -131,7 +131,7 @@ class OrderController extends Controller
                     'delivery_location' => $delivery_location,
                     'delivery_area' => $delivery_area,
                     'delivery_address' => $delivery_address,
-                    'delivery_status' => DeliveryStatusEnum::PENDING->value,
+                    'delivery_status' => DeliveryStatusEnum::PICKED_UP->value,
 
                     'sold_at' => now(),
 
@@ -148,11 +148,10 @@ class OrderController extends Controller
                     'changed_at' => now(),
                 ]);
 
-                // Create initial delivery status
-                $deliveryStatus = $order->orderStatuses()->create([
+                $order->orderStatuses()->create([
                     'type' => 'delivery',
-                    'status' => DeliveryStatusEnum::PENDING->value,
-                    'notes' => 'Delivery created',
+                    'status' => DeliveryStatusEnum::PICKED_UP->value,
+                    'notes' => 'Shop pickup — marked picked up on creation',
                     'user_id' => Auth::id(),
                     'is_system' => false,
                     'changed_at' => now(),
@@ -226,8 +225,8 @@ class OrderController extends Controller
                 // If fully paid and shop pickup, update to ready_for_pickup
                 if ($total_paid >= $total_selling_price && $validated['delivery_method'] === 'shop') {
                     $order->updateOrderStatus(
-                        OrderStatusEnum::READY_FOR_PICKUP,
-                        'Order fully paid, ready for pickup',
+                        OrderStatusEnum::COMPLETED,
+                        'Order fully paid, and picked up',
                         null,
                         Auth::id()
                     );
