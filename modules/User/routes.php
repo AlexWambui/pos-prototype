@@ -40,7 +40,7 @@ Route::middleware('role:admin,super_admin,cashier')
                   ->orWhere('phone', '+' . $phone)
                   ->orWhere('phone', '0' . substr($phone, 3));
             })
-            ->first(['name', 'email', 'phone']);
+            ->first(['id', 'name', 'email', 'phone']);
 
         return response()->json($user);
     })->name('customers.lookup');

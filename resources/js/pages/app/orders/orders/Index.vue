@@ -236,14 +236,11 @@ const getPaymentStatusColor = (status: string) => {
                     <TableHead>Order</TableHead>
                     <TableHead>Name</TableHead>
                     <TableHead>Phone Number</TableHead>
-                    <TableHead>Address</TableHead>
-                    <TableHead>Total</TableHead>
                     <TableHead>Amount Paid</TableHead>
                     <TableHead>Payment</TableHead>
                     <TableHead>Order</TableHead>
                     <TableHead>Delivery</TableHead>
                     <TableHead>Cashier</TableHead>
-                    <TableHead>Updated</TableHead>
                     <TableHead class="actions">Actions</TableHead>
                 </TableRow>
             </TableHeader>
@@ -253,9 +250,7 @@ const getPaymentStatusColor = (status: string) => {
                     <TableCell class="id">{{ (orders.meta.current_page - 1) * orders.meta.per_page + index + 1 }}</TableCell>
                     <TableCell>{{ order.order_number }}</TableCell>
                     <TableCell>{{ order.customer_name }}</TableCell>
-                    <TableCell>{{ order.customer_phone }}</TableCell>
-                    <TableCell>{{ order.delivery_address }}</TableCell>
-                    <TableCell>{{ formatPrice(order.total_selling_price) }}</TableCell>
+                    <TableCell>{{ order.customer_phone ?? '-' }}</TableCell>
                     <TableCell>{{ formatPrice(order.amount_paid) }}</TableCell>
                     <TableCell :class="getPaymentStatusColor(order.payment_status)">
                         {{ order.payment_status }}
@@ -267,7 +262,6 @@ const getPaymentStatusColor = (status: string) => {
                         {{ order.delivery_status_label || 'N/A' }}
                     </TableCell>
                     <TableCell>{{ order.created_by?.name ?? 'N/A' }}</TableCell>
-                    <TableCell>{{ order.updated_by?.name ?? 'N/A' }}</TableCell>
                     <TableCell class="actions w-20">
                         <div class="actions-wrapper">
                             <Link :href="orderRoutes.edit(order.uuid).url" class="action edit">

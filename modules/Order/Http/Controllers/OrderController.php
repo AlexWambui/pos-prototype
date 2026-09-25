@@ -123,9 +123,9 @@ class OrderController extends Controller
                     'total_cost_price' => $total_cost_price,
                     'amount_paid' => $total_paid,
 
-                    'customer_name' => $validated['customer_name'],
-                    'customer_phone' => $validated['customer_phone'],
-                    'customer_email' => $validated['customer_email'],
+                    'customer_name' => $validated['customer_name'] ?: 'Walk-in',
+                    'customer_phone' => $validated['customer_phone'] ?: null,
+                    'customer_email' => $validated['customer_email'] ?: null,
 
                     'delivery_method' => $validated['delivery_method'],
                     'delivery_location' => $delivery_location,
@@ -135,7 +135,7 @@ class OrderController extends Controller
 
                     'sold_at' => now(),
 
-                    'user_id' => null,
+                    'user_id' => $validated['user_id'] ?? null,
                 ]);
 
                 // Create initial order status

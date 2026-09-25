@@ -343,7 +343,7 @@ class Order extends Model
 
     public function getFullNameAttribute(): string
     {
-        return $this->customer_name ?? 'Guest';
+        return $this->customer_name ?? 'Walk-in';
     }
 
     public function isShopPickup(): bool

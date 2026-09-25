@@ -53,6 +53,7 @@ const cart = ref<CartItemPayload[]>([]);
 
 // --- INERTIA FORM ---
 const form = useForm({
+    user_id: null as number | null,
     customer_name: 'Walk-in',
     customer_phone: '',
     customer_email: '',
@@ -84,6 +85,7 @@ const lookupCustomer = (phone: string) => {
 
     if (!phone || phone.length < 7) {
         // Reset to walk-in defaults
+        form.user_id = null;
         form.customer_name = 'Walk-in';
         form.customer_email = '';
         lookupError.value = null;
@@ -99,9 +101,11 @@ const lookupCustomer = (phone: string) => {
             });
 
             if (data?.name) {
+                form.user_id = data.id;
                 form.customer_name  = data.name;
                 form.customer_email = data.email ?? '';
             } else {
+                form.user_id = null;
                 form.customer_name  = 'Walk-in';
                 form.customer_email = '';
                 lookupError.value = 'No account found — will be saved as walk-in.';
@@ -182,6 +186,7 @@ const submitOrder = () => {
             form.customer_name = 'Walk-in';
             form.customer_phone = '';
             form.customer_email = '';
+            form.user_id = null;
 
             router.reload({only: ['recent_orders', 'products']})
         }
@@ -415,8 +420,7 @@ onUnmounted(() => {
                             <Input
                                 id="customer_phone"
                                 v-model="form.customer_phone"
-                                placeholder="e.g. 0712345678"
-                                required
+                                placeholder="e.g. 0712345678 (leave blank for walk-in)"
                             />
                             <Spinner
                                 v-if="lookupLoading"
@@ -426,8 +430,8 @@ onUnmounted(() => {
                         <p v-if="lookupError" class="text-[11px] text-amber-600 mt-1">
                             {{ lookupError }}
                         </p>
-                        <p v-else-if="form.customer_name !== 'Walk-in'" class="text-[11px] text-green-600 mt-1">
-                            ✓ Matched: {{ form.customer_name }}
+                        <p v-else-if="form.user_id" class="text-[11px] text-green-600 mt-1">
+                            Matched customer: {{ form.customer_name }}
                         </p>
                         <InputError :message="form.errors.customer_phone" />
                     </div>
