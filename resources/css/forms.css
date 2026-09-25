@@ -31,7 +31,8 @@
         }
 
         .inputs-group-wrapper,
-        .inputs-group-wrapper-3 {
+        .inputs-group-wrapper-3,
+        .inputs-group-wrapper-4 {
             @apply md:grid md:gap-6 md:items-start;
         }
 
@@ -41,6 +42,10 @@
 
         .inputs-group-wrapper-3 {
             @apply md:grid-cols-3;
+        }
+
+        .inputs-group-wrapper-4 {
+            @apply md:grid-cols-4;
         }
     }
 }
