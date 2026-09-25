@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useForm, Head, router } from '@inertiajs/vue3';
-import { computed, watch, ref, onMounted, onUnmounted } from 'vue';
+import { computed, watch, ref, onMounted, onUnmounted, nextTick } from 'vue';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -213,6 +213,55 @@ onMounted(() => {
 });
 
 onUnmounted(() => clearInterval(interval));
+
+// --- PRODUCT SEARCH ---
+const searchQuery = ref('');
+
+const searchInput = ref<HTMLInputElement | null>(null);
+
+onMounted(() => {
+    // Existing code...
+    nextTick(() => searchInput.value?.focus());
+});
+
+const filteredProducts = computed(() => {
+    const query = searchQuery.value.trim().toLowerCase();
+    
+    if (!query) {
+        return props.products.data;
+    }
+
+    return props.products.data.filter((product) => {
+        const name = product.name?.toLowerCase() ?? '';
+        const sku = (product as any).sku?.toLowerCase() ?? '';
+        const category = (product as any).category?.name?.toLowerCase() ?? '';
+        
+        return name.includes(query) 
+            || sku.includes(query) 
+            || category.includes(query);
+    });
+});
+
+const handleKeydown = (e: KeyboardEvent) => {
+    // Don't hijack if already typing in an input
+    const target = e.target as HTMLElement;
+    const isTyping = ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName) 
+        || target.isContentEditable;
+
+    if (e.key === '/' && !isTyping) {
+        e.preventDefault();
+        searchInput.value?.focus();
+    }
+};
+
+onMounted(() => {
+    window.addEventListener('keydown', handleKeydown);
+});
+
+onUnmounted(() => {
+    window.removeEventListener('keydown', handleKeydown);
+    clearInterval(interval);
+});
 </script>
 
 <template>
@@ -220,9 +269,43 @@ onUnmounted(() => clearInterval(interval));
 
     <div class="pos-wrapper grid lg:grid-cols-2 gap-8 h-[84dvh] p-4 bg-background text-foreground overflow-hidden">
         <div class="products-wrapper overflow-y-auto pr-4">
-            <h2 class="text-xl font-bold mb-4">Select Products</h2>
+            <div class="flex items-center justify-between mb-4 gap-3">
+                <h2 class="text-xl font-bold">Select Products</h2>
+                <span class="text-xs text-gray-500">
+                    {{ filteredProducts.length }} 
+                    {{ filteredProducts.length === 1 ? 'product' : 'products' }}
+                </span>
+            </div>
+
+            <!-- Search Input -->
+            <div class="relative mb-4">
+                <Input
+                    v-model="searchQuery"
+                    type="text"
+                    placeholder="Search by name, SKU, or category... (press / to focus)"
+                    class="pl-9"
+                    @keydown.esc="searchQuery = ''"
+                />
+                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">
+                    🔍
+                </span>
+                <button
+                    v-if="searchQuery"
+                    type="button"
+                    class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-sm"
+                    @click="searchQuery = ''"
+                    aria-label="Clear search"
+                >
+                    ✕
+                </button>
+            </div>
+
             <div class="grid grid-cols-2 lg:grid-cols-3 gap-4">
-                <div v-for="product in products.data" :key="product.id" class="bg-background text-foreground p-3 rounded-lg shadow-sm border hover:shadow-md transition">
+                <div 
+                    v-for="product in filteredProducts" 
+                    :key="product.id" 
+                    class="bg-background text-foreground p-3 rounded-lg shadow-sm border hover:shadow-md transition"
+                >
                     <div class="w-full h-32 overflow-hidden rounded mb-2 bg-gray-100">
                         <img :src="product.thumbnail_url" :alt="product.name" class="w-full h-full object-cover" />
                     </div>
@@ -247,10 +330,29 @@ onUnmounted(() => clearInterval(interval));
                     </div>
                 </div>
 
-                <div v-if="!products.data || products.data.length === 0" class="col-span-full text-center py-12">
+                <!-- Empty state: no products at all -->
+                <div 
+                    v-if="!products.data || products.data.length === 0" 
+                    class="col-span-full text-center py-12"
+                >
                     <div class="text-gray-400 text-6xl mb-4">📦</div>
                     <h3 class="text-xl font-semibold text-gray-600 mb-2">No products available!</h3>
-                    <p class="text-gray-400">There's not stocked products!</p>
+                    <p class="text-gray-400">There are no stocked products!</p>
+                </div>
+
+                <!-- Empty state: search returned nothing -->
+                <div 
+                    v-else-if="filteredProducts.length === 0" 
+                    class="col-span-full text-center py-12"
+                >
+                    <div class="text-gray-400 text-6xl mb-4">🔍</div>
+                    <h3 class="text-xl font-semibold text-gray-600 mb-2">No matches found</h3>
+                    <p class="text-gray-400 mb-4">
+                        No products match "<span class="font-medium">{{ searchQuery }}</span>"
+                    </p>
+                    <Button type="button" variant="outline" size="sm" @click="searchQuery = ''">
+                        Clear search
+                    </Button>
                 </div>
             </div>
         </div>
