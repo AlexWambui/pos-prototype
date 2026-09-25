@@ -7,17 +7,17 @@
 
 Authentication & Authorization
 
+❌ Session timeout after 30 mins of inactivity
 ✅ Email and password authentication
 ✅ Role-based access control (Super Admin, Admin, Cashier) (urgent - blocks UI)
 ✅ Login/Logout functionality
-❌ Session timeout after 30 mins of inactivity
 
 Super Admins
 
-✅ can CRUD all users
 ❌ can view system audit logs
-❌ can reset any user's password
 ❌ can configure store settings (tax rates, store name, currency)
+✅ can CRUD all users
+✅ can reset any user's password
 ✅ can view dashboard sales summary (total revenue, total cogs, gross profit, gross profit margin, aov).
 ✅ can view dashboard payment summary (mpesa sales, cash sales).
 
@@ -28,7 +28,7 @@ Admins
 ✅ can view dashboard payment summary (mpesa sales, cash sales).
 ✅ can CRUD users (cashiers, admins)
 ✅ can view all orders
-⚠️ can filter orders by date, cashier and time
+✅ can filter orders by date, cashier and time
 ⚠️ can void/cancel orders (with reason)
 ❌ can generate sales reports (daily/weekly/monthly)
 ❌ can manage discounts/promotions (CRUD)
@@ -60,26 +60,28 @@ Customers
 
 Order Management
 
-✅ Order quantity adjustment in the create order page
-✅ Order creation with line items, subtotal, tax, total (urgent)
 ❌ Payment processing (Cash, Card, QR) (urgent)
 ❌ Payments can be adjusted or updated.
-✅ Order status tracking (pending, paid, voided, refunded)
 ❌ Receipt generation with order #, date, items, totals
+✅ add a look up using phone number for customers when creating an order in the create order page so that the fields for adding customer details can be removed
+✅ make order status and delivery status default to completed and picked up to make it easier to process POS orders
+✅ Order quantity adjustment in the create order page
+✅ Order creation with line items, subtotal, tax, total (urgent)
+✅ Order status tracking (pending, paid, voided, refunded)
 ✅ Order numbering (auto-incrementing, resets daily or sequential)
 
 Product Management
 
-✅ Product categories CRUD
-✅ Product CRUD with name, price, SKU, category (urgent - data foundation)
 ❌ Products can be easily searched for (using: product.name or product.barcode)
-❌ Stock tracking (deduct on sale) (urgent)
-❌ Inventory / stock management
+✅ Inventory / stock management
 ❌ Low stock alerts (when < 5 items)
 ❌ Bulk import/export (CSV)
-🔥 product edit and update pages should use uuid instead of just id
 🔥 product track_inventory attribute can be updated to true or false
-🔥 notification for when product have low stock
+🔥 notification for when products have low stock
+✅ Product categories CRUD
+✅ Product CRUD with name, price, SKU, category (urgent - data foundation)
+✅ Stock tracking (deduct on sale) (urgent)
+✅ product edit and update pages should use uuid instead of just id
 
 Infrastructure
 
