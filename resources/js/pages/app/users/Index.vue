@@ -13,6 +13,7 @@ interface User {
     uuid: string;
     name: string;
     email: string;
+    phone: string;
     role_label: string;
     status: boolean;
     is_active: boolean;
@@ -194,6 +195,7 @@ const getRowNumber = (index: number) => (props.users.meta.current_page - 1) * pr
                         <TableHead class="id">#</TableHead>
                         <TableHead>Name</TableHead>
                         <TableHead>Email</TableHead>
+                        <TableHead>Phone</TableHead>
                         <TableHead>Role</TableHead>
                         <TableHead class="actions">Actions</TableHead>
                     </TableRow>
@@ -206,6 +208,7 @@ const getRowNumber = (index: number) => (props.users.meta.current_page - 1) * pr
                             {{ user.name }}
                         </TableCell>
                         <TableCell>{{ user.email || '-' }}</TableCell>
+                        <TableCell>{{ user.phone || '-' }}</TableCell>
                         <TableCell>
                             <span :class="getRoleBadgeClass(user.role_label)" class="pill">
                                 {{ user.role_label }}
