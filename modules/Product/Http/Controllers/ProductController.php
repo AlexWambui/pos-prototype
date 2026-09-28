@@ -269,7 +269,14 @@ class ProductController extends Controller
 
             $filename = "{$slug}_{$productId}_{$index}_{$timestamp}_{$random}.webp";
 
-            Image::fromUpload($image)->toWebp()->storeAs('products', $filename, 'public');
+            $original_size = $image->getSize();
+            $processed = Image::fromUpload($image)->toWebp();
+
+            if ($processed->toBytes() < $original_size) {
+                $processed->storeAs('products', $filename, 'public');
+            } else {
+                $image->storeAs('products', $filename, 'public');
+            }
             
             $product->images()->create([
                 'name' => $filename,
