@@ -191,32 +191,32 @@ const getPaymentStatusColor = (status: string) => {
         @search="onSearchInput"
     />
 
-    <div class="filters space-x-8">
-        <select v-model="filters.status" @change="applyFilters" class="border border-border p-2">
+    <div class="filters grid grid-cols-2 gap-4 lg:grid-cols-7">
+        <select v-model="filters.status" @change="applyFilters" class="border border-border p-2 rounded-sm">
             <option value="">All statuses</option>
             <option v-for="s in statuses" :key="s.value" :value="s.value">{{ s.label }}</option>
         </select>
 
-        <select v-model="filters.created_by" @change="applyFilters" class="border border-border p-2">
+        <select v-model="filters.created_by" @change="applyFilters" class="border border-border p-2 rounded-sm">
             <option value="">All cashiers</option>
             <option v-for="c in cashiers" :key="c.id" :value="String(c.id)">{{ c.name }}</option>
         </select>
 
-        <select v-model="filters.delivery_method" @change="applyFilters" class="border border-border p-2">
+        <select v-model="filters.delivery_method" @change="applyFilters" class="border border-border p-2 rounded-sm">
             <option value="">All methods</option>
             <option value="shop">Shop pickup</option>
             <option value="delivery">Delivery</option>
         </select>
 
-        <select v-model="filters.payment_status" @change="applyFilters" class="border border-border p-2">
+        <select v-model="filters.payment_status" @change="applyFilters" class="border border-border p-2 rounded-sm">
             <option value="">All payments</option>
             <option value="paid">Paid</option>
             <option value="partially_paid">Partially paid</option>
             <option value="unpaid">Unpaid</option>
         </select>
 
-        <input type="date" v-model="filters.from" @change="applyFilters" />
-        <input type="date" v-model="filters.to" @change="applyFilters" />
+        <input type="date" v-model="filters.from" @change="applyFilters" class="border border-border p-2 rounded-sm" />
+        <input type="date" v-model="filters.to" @change="applyFilters" class="border border-border p-2 rounded-sm" />
 
         <button
             v-if="hasActiveFilters"
@@ -228,7 +228,93 @@ const getPaymentStatusColor = (status: string) => {
         </button>
     </div>
 
-    <div class="table-wrapper">
+    <!-- Mobile Card View (shown on small screens) -->
+    <div class="md:hidden space-y-3">
+        <div
+            v-for="(order, index) in orders.data"
+            :key="order.id"
+            class="border border-border rounded-lg p-4 bg-card shadow-sm"
+        >
+            <!-- Header: Order number + Actions -->
+            <div class="flex items-start justify-between mb-3">
+                <div>
+                    <p class="font-semibold text-base">{{ order.order_number }}</p>
+                    <p class="text-xs text-muted-foreground">
+                        #{{ (orders.meta.current_page - 1) * orders.meta.per_page + index + 1 }}
+                    </p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <Link :href="orderRoutes.edit(order.uuid).url" class="action edit p-2">
+                        <Pencil class="w-4 h-4 text-green-600" />
+                    </Link>
+                    <DeleteConfirmationDialog
+                        :url="orderRoutes.destroy(order.uuid).url"
+                        title="Delete Order?"
+                        description="This order will be deleted permanently!"
+                        confirm-text="Delete Order"
+                    >
+                        <template #trigger>
+                            <button class="action delete p-2">
+                                <Trash2 class="w-4 h-4 text-red-600" />
+                            </button>
+                        </template>
+                    </DeleteConfirmationDialog>
+                </div>
+            </div>
+
+            <!-- Customer Info -->
+            <div class="space-y-1.5 text-sm mb-3">
+                <div class="flex justify-between">
+                    <span class="text-muted-foreground">Customer:</span>
+                    <span class="font-medium text-right">{{ order.customer_name }}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-muted-foreground">Phone:</span>
+                    <span class="font-medium text-right">{{ order.customer_phone ?? '-' }}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-muted-foreground">Amount Paid:</span>
+                    <span class="font-medium text-right">{{ formatPrice(order.amount_paid) }}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-muted-foreground">Cashier:</span>
+                    <span class="font-medium text-right">{{ order.created_by?.name ?? 'N/A' }}</span>
+                </div>
+            </div>
+
+            <!-- Status Badges -->
+            <div class="flex flex-wrap gap-2 pt-3 border-t border-border">
+                <span
+                    class="text-xs px-2 py-1 rounded-full bg-muted"
+                    :class="getPaymentStatusColor(order.payment_status)"
+                >
+                    {{ order.payment_status }}
+                </span>
+                <span
+                    class="text-xs px-2 py-1 rounded-full bg-muted"
+                    :class="getOrderStatusColor(order.order_status)"
+                >
+                    {{ order.order_status_label }}
+                </span>
+                <span
+                    class="text-xs px-2 py-1 rounded-full bg-muted"
+                    :class="getDeliveryStatusColor(order.delivery_status)"
+                >
+                    {{ order.delivery_status_label || 'N/A' }}
+                </span>
+            </div>
+        </div>
+
+        <!-- Empty state for mobile -->
+        <div
+            v-if="orders.data.length === 0"
+            class="border border-border rounded-lg p-8 text-center text-muted-foreground"
+        >
+            No orders found.
+        </div>
+    </div>
+
+    <div class="table-wrapper hidden md:block">
         <Table>
             <TableHeader>
                 <TableRow>
