@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import Pagination from '@/components/custom/Pagination.vue';
 import type { Product } from '@/types/product';
 import productInventoryRoutes from '@/routes/products-inventory';
+import ProductsNav from '../components/ProductsNav.vue';
 
 const props = defineProps<{
     products: { data: Product[]; meta: any };
@@ -65,6 +66,8 @@ const hasActiveFilters = computed(() =>
 
 <template>
     <Head title="Inventory Management" />
+
+    <ProductsNav current-page="products-inventory" />
 
     <div class="inventory-movement-page">
         <div class="header py-4 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -135,7 +138,91 @@ const hasActiveFilters = computed(() =>
             </div>
         </div>
         
-        <div class="table-wrapper">
+        <div class="md:hidden space-y-3">
+            <div
+                v-for="(product, index) in products.data"
+                :key="product.id"
+                class="border border-border rounded-lg p-4 bg-card shadow-sm"
+            >
+                <div class="flex items-start justify-between mb-3">
+                    <div>
+                        <p class="text-xs text-muted-foreground">
+                            #{{ (products.meta.current_page - 1) * products.meta.per_page + index + 1 }}
+                        </p>
+                        <p class="font-semibold text-base">{{ product.name }}</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        
+                    </div>
+                </div>
+
+                <div class="space-y-1.5 text-sm mb-3">
+                    <div class="flex justify-between">
+                        <span class="text-muted-foreground">Status:</span>
+                        <span class="inline-flex rounded-full text-xs font-medium text-right" :class="product.stock_badge_class">
+                            <component :is="getStockIcon(product)" class="w-3 h-3" />
+                            {{ product.stock_status }}
+                        </span>
+                    </div>
+
+                    <div class="flex justify-between">
+                        <span class="text-muted-foreground">Current Stock:</span>
+                        <span class="font-medium text-right" :class="{ 'font-bold text-red-600': product.current_stock === 0 }">
+                            {{ product.track_inventory ? product.current_stock : '∞' }}
+                        </span>
+                    </div>
+
+                    <div class="flex justify-between">
+                        <span class="text-muted-foreground">Low Stock Threshold:</span>
+                        <span class="font-medium text-right">{{ product.low_stock_threshold }}</span>
+                    </div>
+
+                    <div class="flex justify-between">
+                        <span class="text-muted-foreground">Cost Price:</span>
+                        <span class="font-medium text-right">{{ formatCurrency(product.cost_price) }}</span>
+                    </div>
+
+                    <div class="flex justify-between">
+                        <span class="text-muted-foreground">Cost Price:</span>
+                        <span class="font-medium text-right">{{ formatCurrency(product.price) }}</span>
+                    </div>
+                </div>
+
+                <div class="flex flex-wrap gap-2 pt-3 border-t border-border">
+                    <Link 
+                        :href="productInventoryRoutes.create({product: product.uuid})"
+                        class="px-3 py-1 text-sm rounded-md transition bg-blue-600 text-white hover:bg-blue-700"
+                        v-if="product.track_inventory"
+                    >
+                        + Add Stock
+                    </Link>
+                    <Link 
+                        :href="productInventoryRoutes.edit({product: product.uuid})"
+                        class="px-3 py-1 text-sm rounded-md transition bg-red-600 text-white hover:bg-red-700"
+                        v-if="product.track_inventory"
+                    >
+                        - Remove
+                    </Link>
+                    <Link 
+                        :href="productInventoryRoutes.history({product: product.uuid})"
+                        class="px-3 py-1 text-sm rounded-md transition border border-border text-foreground hover:bg-foreground hover:text-background"
+                        v-if="product.track_inventory"
+                    >
+                        History
+                    </Link>
+                    <span v-else class="text-xs text-gray-400">Stock tracking not enabled</span>
+                </div>
+            </div>
+
+            <div
+                v-if="products.data.length === 0"
+                class="border border-border rounded-lg p-8 text-center text-muted-foreground"
+            >
+                No products found.
+            </div>
+        </div>
+
+        <div class="table-wrapper hidden md:block">
             <Table>
                 <TableHeader>
                     <TableRow>

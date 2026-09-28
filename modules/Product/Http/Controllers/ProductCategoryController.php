@@ -22,7 +22,7 @@ class ProductCategoryController extends Controller
                 ->orWhere('slug', 'like', "%{$search}%");
         }
 
-        $categories = $query->orderBy('name')->get();
+        $categories = $query->orderBy('name')->withCount('products')->get();
 
         return inertia('app/products/categories/Index', [
             'categories' => $categories,

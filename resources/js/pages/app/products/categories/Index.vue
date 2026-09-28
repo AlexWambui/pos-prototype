@@ -10,8 +10,10 @@ import ProductsNav from '../components/ProductsNav.vue';
 
 interface ProductCategory {
     id: number;
+    uuid: string;
     name: string;
     slug: string;
+    products_count: number;
 };
 
 interface Props {
@@ -47,7 +49,55 @@ const handleSearch = (value: string) => {
         @search="handleSearch"
     />
 
-    <div class="table-wrapper">
+    <div class="md:hidden space-y-3">
+        <div
+            v-for="(category, index) in categories"
+            :key="category.id"
+            class="border border-border rounded-lg p-4 bg-card shadow-sm"
+        >
+            <div class="flex items-start justify-between mb-3">
+                <div>
+                    <p class="text-xs text-muted-foreground">
+                        #{{ index + 1 }}
+                    </p>
+                    <p class="font-semibold text-base">{{ category.name }}</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <Link :href="productCategoryRoutes.edit(category.uuid).url" class="action edit p-2">
+                        <Pencil class="w-4 h-4 text-green-600" />
+                    </Link>
+                    <DeleteConfirmationDialog
+                        :url="productCategoryRoutes.destroy(category.uuid).url"
+                        title="Delete Category?"
+                        description="This category will be deleted permanently!"
+                        confirm-text="Delete Category"
+                    >
+                        <template #trigger>
+                            <button class="action delete p-2">
+                                <Trash2 class="w-4 h-4 text-red-600" />
+                            </button>
+                        </template>
+                    </DeleteConfirmationDialog>
+                </div>
+            </div>
+
+            <div class="space-y-1.5 text-sm mb-3">
+                <div class="flex justify-between">
+                    <span class="text-muted-foreground">Products:</span>
+                    <span class="font-medium text-right">{{ category.products_count }}</span>
+                </div>
+            </div>
+        </div>
+
+        <div
+            v-if="categories.length === 0"
+            class="border border-border rounded-lg p-8 text-center text-muted-foreground"
+        >
+            No categories found.
+        </div>
+    </div>
+
+    <div class="table-wrapper hidden md:block">
         <Table>
             <TableHeader>
                 <TableRow>
@@ -65,11 +115,11 @@ const handleSearch = (value: string) => {
                     <TableCell>{{ category.slug }}</TableCell>
                     <TableCell class="actions">
                         <div class="actions-wrapper">
-                            <Link :href="productCategoryRoutes.edit(category.id).url" class="action edit">
+                            <Link :href="productCategoryRoutes.edit(category.uuid).url" class="action edit">
                                 <Pencil />
                             </Link>
                             <span class="divider">|</span>
-                            <DeleteConfirmationDialog :url="productCategoryRoutes.destroy(category.id).url" title="Delete Category?" description="This category will be deleted permanently!" confirm-text="Delete Category">
+                            <DeleteConfirmationDialog :url="productCategoryRoutes.destroy(category.uuid).url" title="Delete Category?" description="This category will be deleted permanently!" confirm-text="Delete Category">
                                 <template #trigger>
                                     <button class="action delete">
                                         <Trash2 />

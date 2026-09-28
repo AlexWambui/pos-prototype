@@ -20,7 +20,6 @@ interface Movement {
 }
 
 const props = defineProps<{
-    shop: { id: number; name: string; slug: string };
     product: { id: number; name: string };
     movements: { data: Movement[]; meta: any };
 }>();
@@ -54,7 +53,74 @@ const getTypeColor = (typeLabel: string) => {
             <h1 class="text-2xl font-bold mt-2">Stock History: {{ product.name }}</h1>
         </div>
 
-        <div class="table-wrapper">
+        <div class="md:hidden space-y-3">
+            <div
+                v-for="(movement, index) in movements.data"
+                :key="movement.id"
+                class="border border-border rounded-lg p-4 bg-card shadow-sm"
+            >
+                <div class="flex items-start justify-between mb-3">
+                    <div>
+                        <p class="text-xs text-muted-foreground">
+                            #{{ (movements.meta.current_page - 1) * movements.meta.per_page + index + 1 }}
+                        </p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                    </div>
+                </div>
+
+                <div class="space-y-1.5 text-sm mb-3">
+                    <div class="flex justify-between">
+                        <span class="text-muted-foreground">Date:</span>
+                        <span class="font-medium text-right">{{ movement.created_at_formatted }}</span>
+                    </div>
+
+                    <div class="flex justify-between">
+                        <span class="text-muted-foreground">Type:</span>
+                        <span class="font-medium text-right inline-block px-2 py-1 rounded-full text-xs" :class="getTypeColor(movement.type)">
+                            {{ movement.type_label }}
+                        </span>
+                    </div>
+
+                    <div class="flex justify-between">
+                        <span class="text-muted-foreground">Quantity:</span>
+                        <span class="font-medium text-right" :class="movement.quantity > 0 ? 'text-green-600' : 'text-red-600'">
+                            {{ movement.formatted_quantity }}
+                        </span>
+                    </div>
+
+                    <div class="flex justify-between">
+                        <span class="text-muted-foreground">Quantity Before:</span>
+                        <span class="font-medium text-right">{{ movement.quantity_before }}</span>
+                    </div>
+
+                    <div class="flex justify-between">
+                        <span class="text-muted-foreground">Quantity After:</span>
+                        <span class="font-medium text-right">{{ movement.quantity_after }}</span>
+                    </div>
+
+                    <div class="flex justify-between">
+                        <span class="text-muted-foreground">Updated by:</span>
+                        <span v-if="movement.is_system" class="text-gray-500 italic">System</span>
+                        <span v-else>{{ movement.performed_by }}</span>
+                    </div>
+
+                    <div class="flex justify-between">
+                        <span class="text-muted-foreground">Notes:</span>
+                        <span class="font-medium text-sm text-gray-500">{{ movement.notes || '-' }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div
+                v-if="movements.data.length === 0"
+                class="border border-border rounded-lg p-8 text-center text-muted-foreground"
+            >
+                No movements found.
+            </div>
+        </div>
+
+        <div class="table-wrapper hidden md:block">
             <Table>
                 <TableHeader>
                     <TableRow>

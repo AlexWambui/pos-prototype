@@ -6,7 +6,7 @@ import productRoutes from '@/routes/products';
 import productInventoryRoutes from '@/routes/products-inventory';
 
 interface Props {
-    currentPage: 'products' | 'discounts' | 'inventory' | 'product-categories';
+    currentPage: 'products' | 'discounts' | 'products-inventory' | 'product-categories';
 }
 
 defineProps<Props>();
@@ -19,7 +19,7 @@ const links = [
 </script>
 
 <template>
-    <div class="shop-nav pb-4 w-full border-b border-sidebar-border/80" aria-label="Breadcrumb">
+    <div class="products-nav pb-4 w-full border-b border-sidebar-border/80" aria-label="Breadcrumb">
         <ol class="flex items-center gap-2 text-sm">
             <li v-for="(item, idx) in links" :key="item.key" class="flex items-center gap-2">
                 <Link

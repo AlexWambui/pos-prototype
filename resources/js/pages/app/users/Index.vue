@@ -2,6 +2,7 @@
 import { Head, Link, router } from '@inertiajs/vue3';
 import { useDebounceFn } from '@vueuse/core';
 import { ref, watch, computed } from 'vue';
+import { Pencil, Trash2 } from '@lucide/vue';
 import AppPageHeader from '@/components/custom/AppPageHeader.vue';
 import DeleteConfirmationDialog from '@/components/custom/DeleteConfirmation.vue';
 import Pagination from '@/components/custom/Pagination.vue';
@@ -188,7 +189,63 @@ const getRowNumber = (index: number) => (props.users.meta.current_page - 1) * pr
             </p>
         </div>
 
-        <div class="table-wrapper">
+        <div class="md:hidden space-y-3">
+            <div
+                v-for="(user, index) in users.data"
+                :key="user.id"
+                class="border border-border rounded-lg p-4 bg-card shadow-sm"
+            >
+                <div class="flex items-start justify-between mb-3">
+                    <div>
+                        <p class="text-xs text-muted-foreground">
+                            #{{ (users.meta.current_page - 1) * users.meta.per_page + index + 1 }}
+                        </p>
+                        <p class="font-semibold text-base">{{ user.name }}</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <Link :href="usersRoutes.edit(user.uuid).url" class="action edit p-2">
+                            <Pencil class="w-4 h-4 text-green-600" />
+                        </Link>
+                        <DeleteConfirmationDialog
+                            :url="usersRoutes.destroy(user.uuid).url"
+                            title="Delete User?"
+                            description="This user will be deleted permanently!"
+                            confirm-text="Delete User"
+                        >
+                            <template #trigger>
+                                <button class="action delete p-2">
+                                    <Trash2 class="w-4 h-4 text-red-600" />
+                                </button>
+                            </template>
+                        </DeleteConfirmationDialog>
+                    </div>
+                </div>
+
+                <div class="space-y-1.5 text-sm mb-3">
+                    <div class="flex justify-between">
+                        <span class="text-muted-foreground">Email:</span>
+                        <span class="font-medium text-right">{{ user.email }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-muted-foreground">Phone:</span>
+                        <span class="font-medium text-right">{{ user.phone ?? '-' }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-muted-foreground">Role:</span>
+                        <span class="font-medium text-right">{{ user.role_label }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div
+                v-if="users.data.length === 0"
+                class="border border-border rounded-lg p-8 text-center text-muted-foreground"
+            >
+                No users found.
+            </div>
+        </div>
+
+        <div class="table-wrapper hidden md:block">
             <Table>
                 <TableHeader>
                     <TableRow>

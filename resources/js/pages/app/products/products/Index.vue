@@ -155,25 +155,6 @@ const truncateDescription = (text: string, maxLength: number = 60): string => {
 
     return text.substring(0, maxLength) + '...';
 };
-
-// const getTagLabel = (type: string, product: Product) => {
-//     const attribute = type as 'is_featured' | 'is_new' | 'is_active';
-
-//     if (isLoading(product, attribute)) {
-//         return ''; // Return empty string, we'll show the spinner
-//     }
-    
-//     switch (type) {
-//         case 'is_featured':
-//             return 'Featured';
-//         case 'is_new':
-//             return 'New';
-//         case 'is_active':
-//             return 'Active';
-//         default:
-//             return '';
-//     }
-// };
 </script>
 
 <template>
@@ -200,7 +181,101 @@ const truncateDescription = (text: string, maxLength: number = 60): string => {
         </div>
     </div>
 
-    <div class="table-wrapper">
+    <div class="md:hidden space-y-3">
+        <div
+            v-for="(product, index) in products.data"
+            :key="product.id"
+            class="border border-border rounded-lg p-4 bg-card shadow-sm"
+        >
+            <div class="flex items-start justify-between mb-3">
+                <div>
+                    <p class="text-xs text-muted-foreground">
+                        #{{ (products.meta.current_page - 1) * products.meta.per_page + index + 1 }}
+                    </p>
+                    <p class="font-semibold text-base">{{ product.name }}</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <Link :href="productRoutes.edit(product.uuid).url" class="action edit p-2">
+                        <Pencil class="w-4 h-4 text-green-600" />
+                    </Link>
+                    <DeleteConfirmationDialog
+                        :url="productRoutes.destroy(product.uuid).url"
+                        title="Delete Product?"
+                        description="This product will be deleted permanently!"
+                        confirm-text="Delete Product"
+                    >
+                        <template #trigger>
+                            <button class="action delete p-2">
+                                <Trash2 class="w-4 h-4 text-red-600" />
+                            </button>
+                        </template>
+                    </DeleteConfirmationDialog>
+                </div>
+            </div>
+
+            <div class="space-y-1.5 text-sm mb-3">
+                <div class="flex justify-between">
+                    <span class="text-muted-foreground">Category:</span>
+                    <span class="font-medium text-right">{{ product.category_name }}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-muted-foreground">Stock Count:</span>
+                    <span class="font-medium text-right">{{ product.current_stock }}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-muted-foreground">Price:</span>
+                    <span class="font-medium text-right">{{ formatPrice(product.price) }}</span>
+                </div>
+            </div>
+
+            <div class="flex flex-wrap gap-2 pt-3 border-t border-border">
+                <button
+                    @click="toggleAttribute(product, 'is_featured')"
+                    :disabled="isLoading(product, 'is_featured')"
+                    :class="getTagClasses('is_featured', product.is_featured)"
+                >
+                    <Loader2 v-if="isLoading(product, 'is_featured')" class="w-3 h-3 animate-spin" />
+                    <span v-else>Featured</span>
+                </button>
+
+                <button
+                    @click="toggleAttribute(product, 'is_new')"
+                    :disabled="isLoading(product, 'is_new')"
+                    :class="getTagClasses('is_new', product.is_new)"
+                >
+                    <Loader2 v-if="isLoading(product, 'is_new')" class="w-3 h-3 animate-spin" />
+                    <span v-else>New</span>
+                </button>
+
+                <button
+                    @click="toggleAttribute(product, 'is_active')"
+                    :disabled="isLoading(product, 'is_active')"
+                    :class="getTagClasses('is_active', product.is_active)"
+                >
+                    <Loader2 v-if="isLoading(product, 'is_active')" class="w-3 h-3 animate-spin" />
+                    <span v-else>Active</span>
+                </button>
+
+                <button
+                    @click="toggleAttribute(product, 'track_inventory')"
+                    :disabled="isLoading(product, 'track_inventory')"
+                    :class="getTagClasses('track_inventory', product.track_inventory)"
+                >
+                    <Loader2 v-if="isLoading(product, 'track_inventory')" class="w-3 h-3 animate-spin" />
+                    <span v-else> Track Inventory</span>
+                </button>
+            </div>
+        </div>
+
+        <div
+            v-if="products.data.length === 0"
+            class="border border-border rounded-lg p-8 text-center text-muted-foreground"
+        >
+            No products found.
+        </div>
+    </div>
+
+    <div class="table-wrapper hidden md:block">
         <Table>
             <TableHeader>
                 <TableRow>
