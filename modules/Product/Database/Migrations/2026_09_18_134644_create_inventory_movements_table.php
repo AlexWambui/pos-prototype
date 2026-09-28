@@ -22,6 +22,7 @@ return new class extends Migration
             $table->decimal('quantity', 15, 2); // positive = addition, negative = subtraction
             $table->decimal('quantity_before', 15, 2); // Stock level before this movment
             $table->decimal('quantity_after', 15, 2);
+            $table->string('source')->default('manual'); // manual | order | system
 
             // Reference to other tables
             $table->string('reference_type')->nullable();

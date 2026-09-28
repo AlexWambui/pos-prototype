@@ -13,8 +13,10 @@ interface Movement {
     quantity_before: number;
     quantity_after: number;
     notes: string | null;
-    created_at: string;
+    created_at_formatted: string;
     user: { name: string } | null;
+    performed_by: string;
+    is_system: boolean;
 }
 
 const props = defineProps<{
@@ -69,7 +71,7 @@ const getTypeColor = (typeLabel: string) => {
                 <TableBody>
                     <TableRow v-for="movement in movements.data" :key="movement.id">
                         <TableCell class="whitespace-nowrap text-sm">
-                            {{ formatDate(movement.created_at) }}
+                            {{ movement.created_at_formatted }}
                         </TableCell>
                         <TableCell>
                             <span :class="getTypeColor(movement.type)" 
@@ -85,7 +87,10 @@ const getTypeColor = (typeLabel: string) => {
                         </TableCell>
                         <TableCell>{{ movement.quantity_before }}</TableCell>
                         <TableCell class="font-medium">{{ movement.quantity_after }}</TableCell>
-                        <TableCell class="text-sm">{{ movement.user?.name || 'System' }}</TableCell>
+                        <TableCell class="text-sm">
+                            <span v-if="movement.is_system" class="text-gray-500 italic">System</span>
+                            <span v-else>{{ movement.performed_by }}</span>
+                        </TableCell>
                         <TableCell class="text-sm text-gray-500">{{ movement.notes || '-' }}</TableCell>
                     </TableRow>
 

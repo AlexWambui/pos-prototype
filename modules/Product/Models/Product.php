@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 use Modules\Support\Concerns\HasUuid;
 use Modules\Support\Concerns\HasSlug;
 use Modules\Product\Enums\InventoryMovementTypes;
@@ -118,7 +119,7 @@ class Product extends Model
         return $this->hasMany(InventoryMovement::class, 'product_id');
     }
 
-    public function scopeSearch(Builder $query, $search): Builder
+    public function scopeSearch(Builder $query, ?string $search): Builder
     {
         if (!$search) {
             return $query;
@@ -151,20 +152,6 @@ class Product extends Model
         return (float) $this->current_stock >= (float) $quantity;
     }
 
-    public function decrementStock(float $quantity): bool
-    {
-        if ($quantity <= 0) {
-            throw new \InvalidArgumentException('Quantity must be positive');
-        }
-
-        $affected = static::query()
-            ->where('id', $this->id)
-            ->where('current_stock', '>=', $quantity)
-            ->decrement('current_stock', $quantity);
-
-        return $affected > 0;
-    }
-
     private function ensureInventoryIsTracked(): void
     {
         if (!$this->tracksInventory()) {
@@ -175,60 +162,97 @@ class Product extends Model
     public function addStock(
         float $quantity, 
         InventoryMovementTypes $type, 
+        string $source,
         ?string $notes = null, 
         ?array $metadata = null
     ): InventoryMovement
     {
         $this->ensureInventoryIsTracked();
 
-        return $this->updateStock(
-            newQuantity: (float) $this->current_stock + $quantity,
-            type: $type,
-            notes: $notes,
-            metadata: $metadata,
-        );
-    }
+        return DB::transaction(function () use ($quantity, $type, $source, $notes, $metadata) {
+            $locked = static::query()->lockForUpdate()->find($this->id);
 
-    public function updateStock(float $newQuantity, InventoryMovementTypes $type, ?string $notes = null, ?array $metadata = null): InventoryMovement
-    {
-        $this->ensureInventoryIsTracked();
-        
-        $oldQuantity = (float) $this->current_stock;
-        $quantityChange = $newQuantity - $oldQuantity;
-        
-        return DB::transaction(function () use ($newQuantity, $oldQuantity, $quantityChange, $type, $notes, $metadata) {
-            $movement = InventoryMovement::create([
-                'product_id' => $this->id,
-                'type' => $type,
-                'quantity' => $quantityChange,
-                'quantity_before' => $oldQuantity,
-                'quantity_after' => $newQuantity,
+            $before = (float) $locked->current_stock;
+            $after  = $before + $quantity;
+
+            $locked->update(['current_stock' => $after]);
+            $this->current_stock = $after;
+
+            return $locked->inventoryMovements()->create([
+                'type' => $type->value,
+                'quantity' => $quantity,
+                'quantity_before' => $before,
+                'quantity_after' => $after,
+                'source' => $source,
                 'notes' => $notes,
                 'metadata' => $metadata,
+                'created_by' => $source === 'manual' ? Auth::id() : null,
             ]);
-
-            $this->current_stock = $newQuantity;
-            $this->save();
-
-            return $movement;
         });
     }
 
-    public function removeStock(float $quantity, InventoryMovementTypes $type, ?string $notes = null, ?array $metadata = null): InventoryMovement
+    public function updateStock(float $new_quantity, InventoryMovementTypes $type, string $source, ?string $notes = null, ?array $metadata = null): InventoryMovement
     {
         $this->ensureInventoryIsTracked();
+        
+        return DB::transaction(function () use ($new_quantity, $type, $source, $notes, $metadata) {
+            // Re-fetch with a row lock so no one else can change stock in parallel
+            $locked = static::query()->lockForUpdate()->find($this->id);
 
-        if (!$this->hasStockFor($quantity)) {
-            throw new InsufficientStockException(
-                "Only {$this->current_stock} units available for '{$this->name}'"
-            );
-        }
+            $before = (float) $locked->current_stock;
+            $quantity_change = $new_quantity - $before;
 
-        return $this->updateStock(
-            newQuantity: (float) $this->current_stock - $quantity,
-            type: $type,
-            notes: $notes,
-            metadata: $metadata,
-        );
+            $locked->update(['current_stock' => $new_quantity]);
+            $this->current_stock = $new_quantity;
+
+            return $locked->inventoryMovements()->create([
+                'type' => $type->value,
+                'quantity' => $quantity_change,
+                'quantity_before' => $before,
+                'quantity_after' => $new_quantity,
+                'source' => $source,
+                'notes' => $notes,
+                'metadata' => $metadata,
+                'created_by' => $source === 'manual' ? Auth::id() : null,
+            ]);
+        });
+    }
+
+    public function removeStock(
+        float $quantity,
+        InventoryMovementTypes $type,
+        string $source,
+        ?string $notes = null,
+        ?array $metadata = null,
+    ): InventoryMovement {
+        $this->ensureInventoryIsTracked();
+        
+        return DB::transaction(function () use ($quantity, $type, $source, $notes, $metadata) {
+            // Re-fetch with a row lock so no one else can change stock in parallel
+            $locked = static::query()->lockForUpdate()->find($this->id);
+
+            $before = (float) $locked->current_stock;
+            $after  = $before - $quantity;
+
+            if ($after < 0) {
+                throw new InsufficientStockException(
+                    "Only {$before} units available for '{$locked->name}'"
+                );
+            }
+
+            $locked->update(['current_stock' => $after]);
+            $this->current_stock = $after;
+
+            return $locked->inventoryMovements()->create([
+                'type' => $type->value,
+                'quantity' => -$quantity,
+                'quantity_before' => $before,
+                'quantity_after' => $after,
+                'source' => $source,
+                'notes' => $notes,
+                'metadata' => $metadata,
+                'created_by' => $source === 'manual' ? Auth::id() : null,
+            ]);
+        });
     }
 }

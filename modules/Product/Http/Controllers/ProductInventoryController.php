@@ -107,6 +107,7 @@ class ProductInventoryController extends Controller
                 product: $product,
                 quantity: $request->quantity,
                 type: $movement_type,
+                source: 'manual',
                 notes: $validated['notes'] ?? null,
             );
 
@@ -172,6 +173,7 @@ class ProductInventoryController extends Controller
                 product: $product,
                 quantity: (float) $validated['quantity'],
                 type: $movement_type,
+                source: 'manual',
                 notes: $validated['notes'] ?? null,
             );
 

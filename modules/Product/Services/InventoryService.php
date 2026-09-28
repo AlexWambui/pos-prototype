@@ -43,8 +43,9 @@ class InventoryService
         Product $product,
         float $quantity,
         InventoryMovementTypes $type,
+        string $source,
         ?string $notes = null,
-        ?array $metadata = null
+        ?array $metadata = null,
     ): InventoryMovement {
         if (!$product->tracksInventory()) {
             throw StockTrackingDisabledException::forProduct($product);
@@ -53,6 +54,7 @@ class InventoryService
         $movement = $product->addStock(
             quantity: $quantity,
             type: $type,
+            source: $source,
             notes: $notes,
             metadata: $metadata,
         );
@@ -63,6 +65,7 @@ class InventoryService
             'quantity' => $quantity,
             'type' => $type->label(),
             'new_stock' => $product->current_stock,
+            'source' => $source
         ]);
 
         return $movement;
@@ -75,6 +78,7 @@ class InventoryService
         Product $product,
         float $quantity,
         InventoryMovementTypes $type, // Changed from string to enum
+        string $source,
         ?string $notes = null,
         ?array $metadata = null
     ): InventoryMovement {
@@ -93,6 +97,7 @@ class InventoryService
             type: $type,
             notes: $notes,
             metadata: $metadata,
+            source: $source
         );
 
         Log::info("Stock removed from product", [
@@ -114,6 +119,7 @@ class InventoryService
         return $this->removeStock(
             product: $product,
             quantity: $quantity,
+            source: 'order',
             type: InventoryMovementTypes::SALE, // Use enum
             notes: "Order #{$orderId} - Payment confirmed",
             metadata: ['order_id' => $orderId]
@@ -128,6 +134,7 @@ class InventoryService
         return $this->addStock(
             product: $product,
             quantity: $quantity,
+            source: 'order',
             type: InventoryMovementTypes::RETURN, // Use enum
             notes: "Return from order #{$orderId}",
             metadata: ['order_id' => $orderId]
@@ -197,6 +204,7 @@ class InventoryService
                     $this->addStock(
                         product: $product,
                         quantity: $update['quantity'],
+                        source: 'manual',
                         type: InventoryMovementTypes::RESTOCK, // Use enum
                         notes: $update['notes'] ?? null
                     );
@@ -204,6 +212,7 @@ class InventoryService
                     $this->removeStock(
                         product: $product,
                         quantity: $update['quantity'],
+                        source: 'manual',
                         type: InventoryMovementTypes::ADJUSTMENT, // Use enum
                         notes: $update['notes'] ?? null
                     );

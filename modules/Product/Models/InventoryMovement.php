@@ -42,4 +42,14 @@ class InventoryMovement extends Model
     {
         return $this->type?->label() ?? 'Unknown';
     }
+
+    public function getIsSystemAttribute(): bool
+    {
+        return $this->source !== 'manual';
+    }
+
+    public function getPerformedByNameAttribute(): string
+    {
+        return $this->is_system ? 'System' : ($this->createdBy?->name ?? 'Unknown');
+    }
 }

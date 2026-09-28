@@ -22,10 +22,14 @@ class InventoryMovementResource extends JsonResource
             'quantity_before' => $this->quantity_before,
             'quantity_after' => $this->quantity_after,
             'notes' => $this->notes,
-            'created_at' => $this->created_at->format('d-m-y H:i:s'),
-            'user' => $this->user ? [
-                'name' => $this->user->name
-            ] : null,
+            'created_at_formatted' => $this->created_at->timezone('Africa/Nairobi')->format('d-m-y H:i:s'),
+
+            'source' => $this->source,
+            'is_system' => $this->is_system,
+            'performed_by' => $this->performed_by_name,
+
+            'reference_type' => $this->reference_type,
+            'reference_id' => $this->reference_id,
         ];
     }
 }

@@ -21,9 +21,12 @@ use Modules\Order\Http\Resources\ProductPOSResource;
 use Modules\Order\Http\Requests\OrderRequest;
 use Modules\User\Enums\UserRoles;
 use Modules\User\Models\User;
+use Modules\Product\Services\InventoryService;
 
 class OrderController extends Controller
 {
+    public function __construct(protected InventoryService $inventoryService) {}
+
     public function index(Request $request)
     {
         $orders = Order::query()
@@ -163,25 +166,12 @@ class OrderController extends Controller
                     $quantity = $item['quantity'] ?? 1;
 
                     if ($product->tracksInventory()) {
-                        // Friendly pre-check (fast fail with a nice message)
-                        if (! $product->hasStockFor($quantity)) {
-                            throw new \RuntimeException(
-                                "Insufficient stock for {$product->name}. "
-                                . "Available: {$product->current_stock}, requested: {$quantity}."
-                            );
-                        }
 
-                        // Atomic decrement (race-safe)
-                        $decremented = Product::query()
-                            ->where('id', $product->id)
-                            ->where('current_stock', '>=', $quantity)
-                            ->decrement('current_stock', $quantity);
-
-                        if ($decremented === 0) {
-                            throw new \RuntimeException(
-                                "Stock for {$product->name} changed. Please refresh and try again."
-                            );
-                        }
+                        $this->inventoryService->deductForOrder(
+                            product: $product,
+                            quantity: $quantity,
+                            orderId: $order->id,
+                        );
                     }
                     
                     OrderItem::create([
