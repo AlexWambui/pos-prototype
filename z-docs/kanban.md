@@ -66,6 +66,7 @@ Order Management
 Product Management
 
 🔥 notification alert for low stock products
+❌ Handle logic for when track_inventory is changed from true to false
 ❌ Bulk import/export (CSV)
 ✅ Products can be easily searched for (using: product.name or product.barcode)
 ✅ Inventory history: updated by and notes should be updated correctly
