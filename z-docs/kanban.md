@@ -8,7 +8,6 @@ Authentication & Authorization
 
 Super Admins
 
-❌ can view system audit logs
 ⚠️ can configure store settings (tax rates, store name, currency)
 ✅ can CRUD all users
 ✅ can reset any user's password
@@ -53,7 +52,7 @@ Customers
 
 Order Management
 
-❌ Payment processing (Cash, Card, QR) (urgent)
+❌ Payment processing (Cash, MPesa)
 ❌ Payments can be adjusted or updated by admins.
 ❌ Receipt generation with order #, date, items, totals
 ✅ product inventory can be updated and set to system as the updater after an order is placed successfully.
@@ -80,9 +79,9 @@ Product Management
 Infrastructure
 
 ✅ Database schema & migrations (urgent)
-❌ Responsive UI (works on tablet/desktop)
+✅ .env configuration for production
+✅ Responsive UI (works on tablet/desktop)
 ❌ Seed data for categories & demo products
-❌ .env configuration for production
 ❌ Unit tests for core flows (auth, cart, checkout)
 ❌ Basic logging for debugging
 
@@ -94,6 +93,8 @@ Out of Scope (Post-MVP)
 ❌ Integration with accounting software
 ❌ Mobile app (PWA optional)
 ❌ Real-time inventory sync across stores
+❌ Payment processing (Card, QR)
+❌ super admins can view system audit logs
 
 Immediate Sprint
 
