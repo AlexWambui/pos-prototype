@@ -36,6 +36,7 @@ interface Product {
     is_active: boolean;
     is_new: boolean;
     track_inventory: boolean;
+    low_stock_threshold: number;
     product_category_id: number | null;
     images: ProductImage[];
 }
@@ -62,6 +63,7 @@ const form = useForm({
     is_active: props.product.is_active,
     is_new: props.product.is_new,
     track_inventory: props.product.track_inventory,
+    low_stock_threshold: props.product.low_stock_threshold,
     product_category_id: props.product.product_category_id,
     images: [] as File[],
     images_to_delete: [] as number[],
@@ -315,6 +317,24 @@ const submitForm = () => {
                             />
                             <Label for="track_inventory">Track Inventory</Label>
                         </div>
+                    </div>
+                </div>
+
+                <div v-if="form.track_inventory" class="inputs-group-wrapper">
+                    <div class="inputs-group">
+                        <Label for="low_stock_threshold">Low Stock Threshold</Label>
+                        <Input
+                            id="low_stock_threshold"
+                            v-model="form.low_stock_threshold"
+                            type="number"
+                            step="1"
+                            min="0"
+                            placeholder="e.g. 5"
+                        />
+                        <p class="text-xs text-gray-500">
+                            You'll be alerted when stock drops to or below this number.
+                        </p>
+                        <InputError :message="form.errors.low_stock_threshold" />
                     </div>
                 </div>
             </div>

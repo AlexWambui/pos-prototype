@@ -27,9 +27,9 @@ class ProductsPageResource extends JsonResource
             'discounted_price' => $this->discounted_price,
             'thumbnail_url' => $this->thumbnail_url,
             'category_name' => $this->category_name,
-            'current_stock' => $this->current_stock,
             'track_inventory' => (bool) $this->track_inventory,
-            'low_stock_threshold' => $this->low_stock_threshold,
+            'current_stock' => (float) $this->current_stock,
+            'low_stock_threshold' => (float) $this->low_stock_threshold,
         ];
     }
 }

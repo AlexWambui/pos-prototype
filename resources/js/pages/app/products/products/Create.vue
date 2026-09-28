@@ -32,6 +32,7 @@ const form = useForm({
     is_active: true,
     is_new: false,
     track_inventory: false,
+    low_stock_threshold: 5,
     product_category_id: null as number | null,
     images: [] as File[],
 });
@@ -270,6 +271,24 @@ const submitForm = () => {
                             />
                             <Label for="track_inventory">Track Inventory</Label>
                         </div>
+                    </div>
+                </div>
+
+                <div v-if="form.track_inventory" class="inputs-group-wrapper">
+                    <div class="inputs-group">
+                        <Label for="low_stock_threshold">Low Stock Threshold</Label>
+                        <Input
+                            id="low_stock_threshold"
+                            v-model="form.low_stock_threshold"
+                            type="number"
+                            step="1"
+                            min="0"
+                            placeholder="e.g. 5"
+                        />
+                        <p class="text-xs text-gray-500">
+                            You'll be alerted when stock drops to or below this number.
+                        </p>
+                        <InputError :message="form.errors.low_stock_threshold" />
                     </div>
                 </div>
             </div>

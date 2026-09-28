@@ -108,8 +108,12 @@ class ProductController extends Controller
         
             Inertia::flash('toast', [
                 'type' => "success",
-                'message' => "Product created successfully"
+                'message' => $product->tracksInventory() ? "Product created. Add initial stock to start tracking." : "Product created successfully.",
             ]);
+
+            if ($product->tracksInventory()) {
+                return to_route('products-inventory.create', $product);
+            }
 
             return to_route('products.index');
         } catch (Exception $e) {
@@ -119,6 +123,8 @@ class ProductController extends Controller
                 'type' => "error",
                 'message' => "Failed to save product: {$e->getMessage()}"
             ]);
+
+            return back()->withInput();
         }
     }
 
@@ -150,6 +156,8 @@ class ProductController extends Controller
 
         try {
 
+            $was_tracking = $product->track_inventory;
+
             $product->update($validated);
 
             // DELETE ONLY SELECTED IMAGES
@@ -173,13 +181,23 @@ class ProductController extends Controller
 
             DB::commit();
 
+            $needs_initial_stock = $product->track_inventory && $product->current_stock == 0 && $product->inventoryMovements()->doesntExist();
+
+            if ($needs_initial_stock) {
+                Inertia::flash('toast', [
+                    'type' => 'success',
+                    'message' => $was_tracking ? 'Product updated. Set your initial stock to start tracking.' : 'Inventory tracking enabled. Set your initial stock level.',
+                ]);
+
+                return to_route('products-inventory.create', $product);
+            }
+
             Inertia::flash('toast', [
-                'type' => "success",
-                'message' => "Product updated successfully"
+                'type' => 'success',
+                'message' => 'Product updated successfully',
             ]);
 
             return to_route('products.index');
-
         } catch (\Throwable $e) {
             DB::rollBack();
 

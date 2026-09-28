@@ -47,6 +47,8 @@ class ProductRequest extends FormRequest
             'is_active' => ['boolean'],
             'is_new' => ['boolean'],
             'track_inventory' => ['boolean'],
+            'low_stock_threshold' => ['nullable', 'numeric', 'min:0', Rule::requiredIf(fn()=>$this->boolean('track_inventory'))],
+            'current_stock' => ['prohibited'],
             'product_category_id' => ['nullable', 'exists:product_categories,id'],
             'images' => ['nullable', 'array', 'max:5'],
             'images.*' => ['image', 'mimes:jpg,jpeg,png,gif,svg,webp', 'max:2048'],
