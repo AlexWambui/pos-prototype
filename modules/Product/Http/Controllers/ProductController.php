@@ -13,6 +13,7 @@ use Modules\Product\Models\Product;
 use Modules\Product\Models\ProductCategory;
 use Modules\Product\Http\Resources\ProductIndexPageResource;
 use Modules\Product\Http\Requests\ProductRequest;
+use Illuminate\Support\Facades\Image;
 
 class ProductController extends Controller
 {
@@ -267,8 +268,8 @@ class ProductController extends Controller
             $sortOrder = $startSortOrder + $index + 1;
 
             $filename = "{$slug}_{$productId}_{$index}_{$timestamp}_{$random}.{$extension}";
-            
-            $image->storeAs('products', $filename, 'public');
+
+            Image::fromUpload($image)->toWebp()->storeAs('products', $filename, 'public');
             
             $product->images()->create([
                 'name' => $filename,
