@@ -263,11 +263,11 @@ class ProductController extends Controller
                 continue;
             }
 
-            $extension = $image->getClientOriginalExtension();
+            // $extension = $image->getClientOriginalExtension();
             $random = Str::random(6);
             $sortOrder = $startSortOrder + $index + 1;
 
-            $filename = "{$slug}_{$productId}_{$index}_{$timestamp}_{$random}.{$extension}";
+            $filename = "{$slug}_{$productId}_{$index}_{$timestamp}_{$random}.webp";
 
             Image::fromUpload($image)->toWebp()->storeAs('products', $filename, 'public');
             
