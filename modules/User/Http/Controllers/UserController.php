@@ -86,15 +86,18 @@ class UserController extends Controller
     {
         $this->authorize('create', User::class);
 
+        $validated = $request->validated();
+
         try {
             DB::beginTransaction();
 
             User::create([
-                'name' => $request->name,
-                'email' => $request->email,
-                'password' => Hash::make($request->password),
-                'role' => $request->role,
-                'status' => $request->status,
+                'name' => $validated['name'],
+                'email' => $validated['email'],
+                'password' => Hash::make($validated['password']),
+                'role' => $validated['role'],
+                'status' => $validated['status'],
+                'phone' => $validated['phone']
             ]);
 
             DB::commit();
@@ -132,14 +135,17 @@ class UserController extends Controller
     {
         $this->authorize('update', $user);
 
+        $validated = $request->validated();
+
         try {
             DB::beginTransaction();
 
             $user->update([
-                'name' => $request->name,
-                'email' => $request->email,
-                'role' => $request->role,
-                'status' => $request->status,
+                'name' => $validated['name'],
+                'email' => $validated['email'],
+                'role' => $validated['role'],
+                'status' => $validated['status'],
+                'phone' => $validated['phone']
             ]);
 
             if ($request->password) {

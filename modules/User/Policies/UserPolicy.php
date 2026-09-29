@@ -44,4 +44,25 @@ class UserPolicy
 
         return $this->update($auth, $target);
     }
+
+    /**
+     * Determine whether the auth user can change the target's role.
+     */
+    public function changeRole(User $auth, User $target): Response
+    {
+        // Nobody can change their own role, not even super admins
+        if ($auth->id === $target->id) {
+            return Response::deny('You cannot change your own role.');
+        }
+
+        if ($auth->role === UserRoles::SUPER_ADMIN) {
+            return Response::allow();
+        }
+
+        if ($auth->role !== UserRoles::ADMIN) {
+            return Response::deny('You do not have permission to change user roles.');
+        }
+
+        return Response::allow();
+    }
 }

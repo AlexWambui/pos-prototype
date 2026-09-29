@@ -11,6 +11,7 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Propaganistas\LaravelPhone\Casts\E164PhoneNumberCast;
 use Modules\Support\Concerns\HasUuid;
 use Modules\User\Enums\UserRoles;
 use Modules\User\Enums\UserStatuses;
@@ -45,7 +46,8 @@ class User extends Authenticatable
             'password' => 'hashed',
             'two_factor_confirmed_at' => 'datetime',
             'role' => UserRoles::class,
-            'status' => UserStatuses::class
+            'status' => UserStatuses::class,
+            'phone' => E164PhoneNumberCast::class,
         ];
     }
 

@@ -39,7 +39,28 @@ class UserRequest extends FormRequest
         $rules = [
             'name' => ['required', 'string', 'max:200'],
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user?->id)],
-            'role' => ['required', Rule::in($allowed_roles)],
+
+            'phone' => ['nullable', 'phone:INTERNATIONAL'],
+            'phone_country' => ['nullable', 'string', 'size:2'],
+
+            'role' => [
+                'required',
+                Rule::in($allowed_roles),
+                function ($attribute, $value, $fail) use ($user, $auth_user) {
+                    if (!$user) return;  // creating, not updating
+
+                    // $user->role is cast to UserRoles enum by the model
+                    $current_role = $user->role instanceof UserRoles
+                        ? $user->role->value
+                        : (int) $user->role;
+
+                    if ((int) $value === $current_role) return;  // no change
+
+                    if ($auth_user->id === $user->id && $auth_user->role !== UserRoles::SUPER_ADMIN) {
+                        $fail('You cannot change your own role.');
+                    }
+                },
+            ],
             'status' => ['required', 'integer', 'in:' . implode(',', array_column(UserStatuses::cases(), 'value'))],
         ];
 
@@ -81,6 +102,10 @@ class UserRequest extends FormRequest
             $this->merge([
                 'status' => $this->input('status', 1),
             ]);
+        }
+
+        if ($this->phone === '') {
+            $this->merge(['phone' => null]);
         }
     }
 }
