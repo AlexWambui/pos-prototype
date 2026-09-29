@@ -36,7 +36,7 @@ class OrderService
      *   deduct_inventory: bool,
      * } $data
      */
-    public function create(array $data, User $actor): Order
+    public function create(array $data, ?User $actor): Order
     {
         return DB::transaction(function () use ($data, $actor) {
             // --- CALCULATE TOTALS ---
@@ -84,8 +84,8 @@ class OrderService
                 'type' => 'order',
                 'status' => $data['initial_order_status'],
                 'notes' => 'Order created via ' . $data['order_channel'],
-                'user_id' => $actor->id,
-                'is_system' => false,
+                'user_id' => $actor?->id,
+                'is_system' => $actor === null,
                 'changed_at' => now(),
             ]);
 
@@ -94,8 +94,8 @@ class OrderService
                 'type' => 'delivery',
                 'status' => $data['delivery']['status'],
                 'notes' => 'Initial delivery status',
-                'user_id' => $actor->id,
-                'is_system' => false,
+                'user_id' => $actor?->id,
+                'is_system' => $actor === null,
                 'changed_at' => now(),
             ]);
 
@@ -147,7 +147,7 @@ class OrderService
                     OrderStatusEnum::CONFIRMED,
                     'Order fully paid, confirmed',
                     null,
-                    $actor->id,
+                    $actor?->id,
                 );
             }
 
@@ -156,7 +156,7 @@ class OrderService
                     OrderStatusEnum::COMPLETED,
                     'Order fully paid, and picked up',
                     null,
-                    $actor->id,
+                    $actor?->id,
                 );
             }
 
