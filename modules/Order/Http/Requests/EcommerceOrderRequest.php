@@ -37,7 +37,6 @@ class EcommerceOrderRequest extends FormRequest
             // Cart
             'cart_items' => ['required', 'array', 'min:1'],
             'cart_items.*.id' => ['required', 'integer', 'exists:products,id'],
-            'cart_items.*.price' => ['required', 'numeric', 'min:0'],
             'cart_items.*.quantity' => ['required', 'integer', 'min:1'],
 
             // Payments (optional at creation)
