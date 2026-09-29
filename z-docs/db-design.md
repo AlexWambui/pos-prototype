@@ -9,7 +9,7 @@ users {
     $table->uuid('uuid')->unique();
     $table->string('name');
     $table->string('email')->unique();
-    $table->string('phone_number')->nullable();
+    $table->string('phone')->nullable();
     $table->unsignedTinyInteger('role')->default(4)->index();
     $table->unsignedTinyInteger('status')->default(1)->index();
     $table->string('image')->nullable();
@@ -27,7 +27,7 @@ branches {
     $table->uuid('uuid')->unique();
     $table->string('name');
     $table->string('code')->unique();
-    $table->string('phone_number')->nullable();
+    $table->string('phone')->nullable();
     $table->string('email')->nullable();
     $table->string('city')->nullable();
     $table->string('address')->nullable();
@@ -213,7 +213,7 @@ settings {
     $table->id();
     $table->string('company_name');
     $table->string('location');
-    $table->string('phone_number');
+    $table->string('phone');
     $table->string('other_phone_number')->nullable();
     $table->string('email');
     $table->string('currency')->default('KES');

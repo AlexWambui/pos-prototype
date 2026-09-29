@@ -13,7 +13,7 @@ interface Branch {
     uuid: string;
     name: string;
     code: string;
-    phone_number: string;
+    phone: string;
     email: string;
     address: string;
     city: string;
@@ -93,7 +93,7 @@ const getDisplayRange = computed(() => {
                     <TableCell class="id">{{ (branches.meta.current_page - 1) * branches.meta.per_page + index + 1 }}</TableCell>
                     <TableCell :class="{ 'text-red-500 font-medium' : branch.is_active === false, 'text-green-600 font-medium' : branch.is_active === true }">{{ branch.name }}</TableCell>
                     <TableCell>{{ branch.code ?? '-' }}</TableCell>
-                    <TableCell>{{ branch.phone_number ?? '-' }}</TableCell>
+                    <TableCell>{{ branch.phone ?? '-' }}</TableCell>
                     <TableCell>{{ branch.email ?? '-' }}</TableCell>
                     <TableCell>{{ branch.city ?? '-' }}</TableCell>
                     <TableCell>{{ branch.address ?? '-' }}</TableCell>

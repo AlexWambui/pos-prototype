@@ -10,7 +10,7 @@ import branches from '@/routes/branches';
 interface BranchFormData {
     name: string;
     code: string;
-    phone_number: string;
+    phone: string;
     email: string,
     address: string;
     city: string;
@@ -20,7 +20,7 @@ interface BranchFormData {
 const form = useForm<BranchFormData>({
   name: '',
   code: '',
-  phone_number: '',
+  phone: '',
   email: '',
   address: '',
   city: '',
@@ -50,9 +50,9 @@ const handleSubmit = () => {
             </div>
 
             <div class="inputs-group">
-                <Label for="phone_number">Phone Number</Label>
-                <Input v-model="form.phone_number" type="text" placeholder="Phone Number" />
-                <InputError :message="form.errors.phone_number" />
+                <Label for="phone">Phone Number</Label>
+                <Input v-model="form.phone" type="text" placeholder="Phone Number" />
+                <InputError :message="form.errors.phone" />
             </div>
 
             <div class="inputs-group">
