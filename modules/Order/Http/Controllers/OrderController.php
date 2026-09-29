@@ -21,11 +21,11 @@ use Modules\Order\Http\Resources\ProductPOSResource;
 use Modules\Order\Http\Requests\OrderRequest;
 use Modules\User\Enums\UserRoles;
 use Modules\User\Models\User;
-use Modules\Product\Services\InventoryService;
+use Modules\Order\Actions\CreatePosOrderAction;
 
 class OrderController extends Controller
 {
-    public function __construct(protected InventoryService $inventoryService) {}
+    public function __construct(protected CreatePosOrderAction $createPosOrder) {}
 
     public function index(Request $request)
     {
@@ -87,146 +87,7 @@ class OrderController extends Controller
         $validated = $request->validated();
 
         try {
-            DB::transaction(function () use ($validated) {
-                // --- CALCULATE TOTALS ---
-                $subtotal = collect($validated['cart_items'])->sum(fn($item) => $item['price'] * ($item['quantity'] ?? 1));
-
-                // Total cost price
-                $total_cost_price = 0;
-                foreach ($validated['cart_items'] as $item) {
-                    $product = Product::find($item['id']);
-                    $total_cost_price += ($product->cost_price ?? 0) * ($item['quantity'] ?? 1);
-                }
-
-                // Total selling price (subtotal + delivery)
-                $total_selling_price = $subtotal + $validated['delivery_cost'];
-
-                // Calculate total paid from payments
-                $total_paid = collect($validated['payments'])->sum('amount');
-
-                // Determine initial order status
-                $initialOrderStatus = $validated['delivery_method'] === 'delivery' 
-                    ? OrderStatusEnum::PENDING 
-                    : OrderStatusEnum::READY_FOR_PICKUP;
-
-                // delivery details
-                $delivery_location = 'shop';
-                $delivery_area = 'shop';
-                $delivery_address = 'shop';
-
-                // --- CREATE THE ORDER ---
-                $order = Order::create([
-                    'order_number' => 'Ord_' . strtoupper(Str::random(6)) . '_' . now()->format('ymd'),
-                    'order_channel' => $validated['order_channel'],
-                    'order_status' => $initialOrderStatus->value,
-                    
-                    'subtotal' => $subtotal,
-                    'shipping_cost' => $validated['delivery_cost'],
-                    'total_selling_price' => $total_selling_price,
-                    'total_cost_price' => $total_cost_price,
-                    'amount_paid' => $total_paid,
-
-                    'customer_name' => $validated['customer_name'] ?: 'Walk-in',
-                    'customer_phone' => $validated['customer_phone'] ?: null,
-                    'customer_email' => $validated['customer_email'] ?: null,
-
-                    'delivery_method' => $validated['delivery_method'],
-                    'delivery_location' => $delivery_location,
-                    'delivery_area' => $delivery_area,
-                    'delivery_address' => $delivery_address,
-                    'delivery_status' => DeliveryStatusEnum::PICKED_UP->value,
-
-                    'sold_at' => now(),
-
-                    'user_id' => $validated['user_id'] ?? null,
-                ]);
-
-                // Create initial order status
-                $orderStatus = $order->orderStatuses()->create([
-                    'type' => 'order',
-                    'status' => $initialOrderStatus->value,
-                    'notes' => 'Order created via ' . $validated['order_channel'],
-                    'user_id' => Auth::id(), // If admin is logged in
-                    'is_system' => false,
-                    'changed_at' => now(),
-                ]);
-
-                $order->orderStatuses()->create([
-                    'type' => 'delivery',
-                    'status' => DeliveryStatusEnum::PICKED_UP->value,
-                    'notes' => 'Shop pickup — marked picked up on creation',
-                    'user_id' => Auth::id(),
-                    'is_system' => false,
-                    'changed_at' => now(),
-                ]);
-
-                // --- CREATE ORDER ITEMS (Loop through cart) ---
-                foreach ($validated['cart_items'] as $item) {
-                    $product = Product::find($item['id']);
-                    $quantity = $item['quantity'] ?? 1;
-
-                    if ($product->tracksInventory()) {
-
-                        $this->inventoryService->deductForOrder(
-                            product: $product,
-                            quantity: $quantity,
-                            orderId: $order->id,
-                        );
-                    }
-                    
-                    OrderItem::create([
-                        'order_id' => $order->id,
-                        'product_id' => $product->id,
-                        
-                        'product_name' => $product->name,
-                        'product_sku' => $product->sku ?? null,
-                        'quantity' => $quantity,
-                        'cost_price' => $product->cost_price ?? 0,
-                        'selling_price' => $item['price'],
-                        'subtotal' => $item['price'] * $quantity,
-                        'total' => $item['price'] * $quantity,
-                    ]);
-                }
-
-                // --- CREATE PAYMENT RECORD ---
-                foreach ($validated['payments'] as $paymentData) {
-                    if ($paymentData['amount'] > 0) {
-                        Payment::create([
-                            'order_id' => $order->id,
-                            'payment_method' => $paymentData['method'],
-                            'transaction_reference' => null, // Handled manually for walk-in
-                            'amount' => $paymentData['amount'],
-                            'payment_status' => 'paid',
-                            'paid_at' => now()
-                        ]);
-                    }
-                }
-
-                // If fully paid and delivery, update order status to confirmed
-                if ($total_paid >= $total_selling_price && $validated['delivery_method'] === 'delivery') {
-                    $order->updateOrderStatus(
-                        OrderStatusEnum::CONFIRMED,
-                        'Order fully paid, confirmed',
-                        null,
-                        Auth::id()
-                    );
-                }
-
-                // If fully paid and shop pickup, update to ready_for_pickup
-                if ($total_paid >= $total_selling_price && $validated['delivery_method'] === 'shop') {
-                    $order->updateOrderStatus(
-                        OrderStatusEnum::COMPLETED,
-                        'Order fully paid, and picked up',
-                        null,
-                        Auth::id()
-                    );
-                }
-
-                // --- OPTIONAL: ASSIGN LOYALTY POINTS ---
-                // If you have a user/loyalty system, you can add points here
-                // $user = User::where('phone', $validated['customer_phone'])->first();
-                // if($user) $user->increment('points', floor($totalAmount / 100));
-            });
+            $this->createPosOrder->execute($validated, Auth::user());
         } catch (\RuntimeException $e) {
             Inertia::flash('toast', [
                 'type' => 'error',
