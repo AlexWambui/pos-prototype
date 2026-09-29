@@ -29,7 +29,7 @@ class BranchRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:120', Rule::unique('branches')->ignore($branch_id)],
             'code' => ['nullable', 'string', 'max:30', Rule::unique('branches', 'code')->ignore($branch_id)],
-            'phone_number' => ['nullable', 'string', 'max:20'],
+            'phone' => ['nullable', 'string', 'max:20'],
             'email' => ['nullable', 'string', 'email', 'max:255'],
             'address' => ['nullable', 'string', 'max:255'],
             'city' => ['nullable', 'string', 'max:100'],

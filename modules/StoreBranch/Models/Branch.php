@@ -40,7 +40,7 @@ class Branch extends Model
             $q->whereRaw('LOWER(name) LIKE ?', ["%{$searchTerm}%"])
                 ->orWhereRaw('LOWER(code) LIKE ?', ["%{$searchTerm}%"])
                 ->orWhereRaw('LOWER(email) LIKE ?', ["%{$searchTerm}%"])
-                ->orWhereRaw('LOWER(phone_number) LIKE ?', ["%{$searchTerm}%"])
+                ->orWhereRaw('LOWER(phone) LIKE ?', ["%{$searchTerm}%"])
                 ->orWhereRaw('LOWER(address) LIKE ?', ["%{$searchTerm}%"])
                 ->orWhereRaw('LOWER(city) LIKE ?', ["%{$searchTerm}%"]);
         });

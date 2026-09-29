@@ -22,7 +22,7 @@ class BranchResource extends JsonResource
             'slug' => $this->slug,
             'code' => $this->code,
             'email' => $this->email,
-            'phone_number' => $this->phone_number,
+            'phone' => $this->phone,
             'city' => $this->city,
             'address' => $this->address,
             'is_active' => (bool) $this->is_active,
