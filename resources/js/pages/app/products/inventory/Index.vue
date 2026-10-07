@@ -108,6 +108,16 @@ const hasActiveFilters = computed(() =>
             </div>
 
             <div class="card flex items-center gap-4 p-4 border border-border rounded-lg shadow-sm">
+                <div class="icon bg-green-100 p-3 rounded-full">
+                    <DollarSign class="w-5 h-5 text-green-600" />
+                </div>
+                <div class="stat-info">
+                    <div class="value text-2xl font-bold">{{ formatCurrency(stats.total_value) }}</div>
+                    <div class="label text-sm text-muted-foreground">Inventory Value</div>
+                </div>
+            </div>
+
+            <div class="card flex items-center gap-4 p-4 border border-border rounded-lg shadow-sm">
                 <div class="icon bg-orange-100 p-3 rounded-full">
                     <AlertTriangle class="w-5 h-5 text-orange-600" />
                 </div>
@@ -124,16 +134,6 @@ const hasActiveFilters = computed(() =>
                 <div class="info">
                     <div class="value text-red-600 text-2xl font-bold">{{ stats.out_of_stock_count }}</div>
                     <div class="label text-sm text-muted-foreground">Out of Stock</div>
-                </div>
-            </div>
-
-            <div class="card flex items-center gap-4 p-4 border border-border rounded-lg shadow-sm">
-                <div class="icon bg-green-100 p-3 rounded-full">
-                    <DollarSign class="w-5 h-5 text-green-600" />
-                </div>
-                <div class="stat-info">
-                    <div class="value text-2xl font-bold">{{ formatCurrency(stats.total_value) }}</div>
-                    <div class="label text-sm text-muted-foreground">Inventory Value</div>
                 </div>
             </div>
         </div>
