@@ -88,7 +88,7 @@ class OrderController extends Controller
 
         try {
             $this->createPosOrder->execute($validated, Auth::user());
-        } catch (\RuntimeException $e) {
+        } catch (\Throwable $e) {
             Inertia::flash('toast', [
                 'type' => 'error',
                 'message' => $e->getMessage(),
