@@ -379,7 +379,7 @@ const truncateDescription = (text: string, maxLength: number = 60): string => {
                 </TableRow>
 
                 <TableRow v-if="products.data.length === 0">
-                    <TableCell colspan="9" class="blank-table-row">
+                    <TableCell colspan="12" class="blank-table-row">
                         No products found.
                     </TableCell>
                 </TableRow>
