@@ -1,135 +1,344 @@
 <script setup lang="ts">
-import { Head, usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
+import { Head, router, usePage } from '@inertiajs/vue3';
 import DashboardStat from './components/DashboardStat.vue';
-import { usePriceFormatter } from '@/composables/usePriceFormatter';
-import { Chart as ChartJS, Title, Tooltip, Legend, LineElement, CategoryScale, LinearScale, ArcElement, PointElement } from 'chart.js';
-import { Line, Pie } from 'vue-chartjs';
+import {
+    Chart as ChartJS, Title, Tooltip, Legend, LineElement, CategoryScale,
+    LinearScale, ArcElement, PointElement, DoughnutController, LineController,
+} from 'chart.js';
+import { Line, Doughnut } from 'vue-chartjs';
+
+ChartJS.register(
+    Title, Tooltip, Legend, LineElement, CategoryScale, LinearScale,
+    ArcElement, PointElement, DoughnutController, LineController,
+);
 
 const page = usePage();
 const user = computed(() => page.props.auth.user);
-const {formatPrice} = usePriceFormatter();
 
-ChartJS.register(Title, Tooltip, Legend, LineElement, CategoryScale, LinearScale, ArcElement, PointElement);
+type Period = 'today' | 'week' | 'month' | 'year';
 
-interface Props {
-    stats: {
+interface Delta { revenue: number | null; orders: number | null; }
+
+interface TopProduct {
+    id: number;
+    name: string;
+    qty: number;
+    revenue: number;
+}
+
+interface Stats {
+    period: Period;
+    periods: Period[];
+
+    glance: {
+        today: { revenue: number; orders: number; delta: Delta };
+        needs_attention: number;
+        low_stock_count: number;
+    };
+
+    trend: { labels: string[]; values: number[] };
+
+    payment_breakdown: { mpesa: number; cash: number };
+    status_mix: Record<string, number>;
+    top_products: TopProduct[];
+
+    fiscal: {
+        orders: number;
+        revenue: number;
+        cogs: number;
+        gross_profit: number;
+        margin: number;
+        aov: number;
+    };
+
+    deltas: Record<Period, Delta>;
+    counts: {
         total_users: number;
         total_admins: number;
         total_cashiers: number;
-
         total_products: number;
         total_product_categories: number;
-
         total_orders: number;
         orders_need_attention: number;
+    };
+}
 
-        total_delivery_locations: number;
-        total_delivery_areas: number;
+const props = defineProps<{ stats: Stats }>();
 
-        total_callbacks: number;
-        total_unread_callbacks: number;
-
-        monthly_sales: number[];
-        payment_breakdown: {
-            mpesa: number;
-            cash: number;
-        };
-        total_revenue: number;
-        total_cogs: number;
-        total_gross_profit: number;
-        gross_profit_margin: number;
-        aov: number;
-    }
+const periodLabel: Record<Period, string> = {
+    today: 'Today',
+    week: 'This Week',
+    month: 'This Month',
+    year: 'This Year',
 };
 
-const props = defineProps<Props>();
+function setPeriod(period: Period) {
+    if (period === props.stats.period) return;
+    router.get(
+        window.location.pathname,
+        { period },
+        { preserveState: true, preserveScroll: true, replace: true },
+    );
+}
 
+// ── Trend chart ─────────────────────────────────────────────────────────
 const lineChartData = computed(() => ({
-    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
-    datasets: [
-        {
-            label: 'Sales (Ksh)',
-            data: props.stats.monthly_sales,
-            borderColor: '#3b82f6', // blue-500
-            backgroundColor: 'rgba(59, 130, 246, 0.1)', // fill color (light blue)
-            borderWidth: 3,
-            fill: true,
-        }
-    ]
+    labels: props.stats.trend.labels,
+    datasets: [{
+        label: 'Sales (Ksh)',
+        data: props.stats.trend.values,
+        borderColor: '#3b82f6',
+        backgroundColor: 'rgba(59,130,246,0.1)',
+        borderWidth: 3,
+        fill: true,
+        tension: 0.3,
+    }],
 }));
 
 const lineChartOptions = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
-        legend: { 
-            display: false
-        },
+        legend: { display: false },
         tooltip: {
             callbacks: {
-                label: (context: any) => `Ksh ${context.parsed.y.toLocaleString()}`
-            }
-        }
+                label: (ctx: any) => `Ksh ${ctx.parsed.y.toLocaleString()}`,
+            },
+        },
     },
     scales: {
         y: {
             beginAtZero: true,
-            ticks: { callback: (value: any) => `${value.toLocaleString()}` }
-        }
-    }
+            ticks: { callback: (v: any) => `${v.toLocaleString()}` },
+        },
+    },
 };
 
-const pieChartData = computed(() => ({
+// ── Payment donut ───────────────────────────────────────────────────────
+const paymentData = computed(() => ({
     labels: ['M-Pesa', 'Cash'],
-    datasets: [
-        {
-            data: [
-                props.stats.payment_breakdown.mpesa, 
-                props.stats.payment_breakdown.cash
-            ],
-            backgroundColor: ['#10b981', '#f59e0b'], // green-500, amber-500
-            borderWidth: 1
-        }
-    ]
+    datasets: [{
+        data: [props.stats.payment_breakdown.mpesa, props.stats.payment_breakdown.cash],
+        backgroundColor: ['#10b981', '#f59e0b'],
+        borderWidth: 1,
+    }],
 }));
 
-const pieChartOptions = {
+const paymentOptions = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
-        legend: { 
-            position: 'right' as const, 
-        },
+        legend: { position: 'bottom' as const },
         tooltip: {
             callbacks: {
-                label: (context: any) => {
-                    const value = context.parsed;
-                    const dataset = context.dataset;
-                    const total = dataset.data.reduce((a: number, b: number) => a + b, 0);
-
-                    if (total === 0) {
-                        return `${context.label}: Ksh 0 (0%)`;
-                    }
-
-                    const percentage = ((value / total) * 100).toFixed(1);
-
-                    return `Ksh ${value.toLocaleString()} (${percentage}%)`;
-                }
-            }
-        }
-    }
+                label: (ctx: any) => {
+                    const total = ctx.dataset.data.reduce((a: number, b: number) => a + b, 0);
+                    const pct = total === 0 ? 0 : ((ctx.parsed / total) * 100).toFixed(1);
+                    return `Ksh ${ctx.parsed.toLocaleString()} (${pct}%)`;
+                },
+            },
+        },
+    },
 };
+
+// ── Formatting helpers ──────────────────────────────────────────────────
+const fmtCurrency = (n: number) => `Ksh ${n.toLocaleString()}`;
+const fmtPct = (n: number | null) =>
+    n === null ? 'n/a' : `${n >= 0 ? '+' : ''}${n.toFixed(1)}%`;
 </script>
 
 <template>
     <Head title="Admin Dashboard" />
 
-    <div class="Dashboard AdminDashboard space-y-12">
+    <div class="Dashboard space-y-8">
         <section class="header">
             <div class="flex items-center gap-4">
                 <p>Hi {{ user.name }}</p>
-                <span class="text-xs text-blue-900 bg-blue-100 py-1 px-2 rounded-sm">{{ user.role_label }}</span>
+                <span class="text-xs text-blue-900 bg-blue-100 py-1 px-2 rounded-sm">
+                    {{ user.role_label }}
+                </span>
+            </div>
+        </section>
+
+        <section class="glance">
+            <h2 class="mb-4 font-medium">Today at a glance</h2>
+            <div class="stats grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+                <DashboardStat
+                    :stat="stats.glance.today.revenue"
+                    format="currency"
+                    label="Today's Revenue"
+                >
+                    <template #extras>
+                        <span
+                            class="text-sm"
+                            :class="(stats.glance.today.delta.revenue ?? 0) >= 0
+                                ? 'text-emerald-600' : 'text-red-600'"
+                        >
+                            {{ fmtPct(stats.glance.today.delta.revenue) }} vs yesterday
+                        </span>
+                    </template>
+                </DashboardStat>
+
+                <DashboardStat
+                    :stat="stats.glance.today.orders"
+                    label="Today's Orders"
+                >
+                    <template #extras>
+                        <span
+                            class="text-sm"
+                            :class="(stats.glance.today.delta.orders ?? 0) >= 0
+                                ? 'text-emerald-600' : 'text-red-600'"
+                        >
+                            {{ fmtPct(stats.glance.today.delta.orders) }} vs yesterday
+                        </span>
+                    </template>
+                </DashboardStat>
+
+                <DashboardStat
+                    :stat="stats.glance.needs_attention"
+                    label="Needs Attention"
+                    variant="danger"
+                >
+                    <template #extras>
+                        <span class="text-sm text-muted-foreground">
+                            Pending / stuck orders
+                        </span>
+                    </template>
+                </DashboardStat>
+
+                <DashboardStat
+                    :stat="stats.glance.low_stock_count"
+                    label="Low Stock Items"
+                >
+                    <template #extras>
+                        <span class="text-sm text-muted-foreground">
+                            At or below threshold
+                        </span>
+                    </template>
+                </DashboardStat>
+            </div>
+        </section>
+
+        <section class="flex flex-col lg:flex-row gap-4 lg:items-center lg:justify-between">
+            <h2 class="font-medium">Performance</h2>
+            <div class="flex gap-1 p-1 bg-muted rounded-md">
+                <button
+                    v-for="p in stats.periods"
+                    :key="p"
+                    type="button"
+                    class="px-3 py-1.5 text-sm rounded-sm transition"
+                    :class="stats.period === p
+                        ? 'bg-background shadow-sm font-medium'
+                        : 'text-muted-foreground hover:text-foreground'"
+                    @click="setPeriod(p)"
+                >
+                    {{ periodLabel[p] }}
+                </button>
+            </div>
+        </section>
+
+        <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="lg:col-span-2 bg-background p-4 rounded-lg border border-border h-80">
+                <h3 class="text-sm font-medium mb-2">
+                    Sales trend - {{ periodLabel[stats.period] }}
+                </h3>
+                <div class="h-65">
+                    <Line
+                        :data="lineChartData"
+                        :options="lineChartOptions"
+                        style="height: 100%!important; width: 100%!important;"
+                    />
+                </div>
+            </div>
+
+            <div class="bg-background p-4 rounded-lg border border-border h-80">
+                <h3 class="text-sm font-medium mb-2">Payment methods</h3>
+                <div class="h-65">
+                    <Doughnut
+                        :data="paymentData"
+                        :options="paymentOptions"
+                        style="height: 100%!important; width: 100%!important;"
+                    />
+                </div>
+            </div>
+        </section>
+
+        <section class="stats-wrapper">
+            <h2 class="mb-4 font-medium">
+                Fiscal snapshot - {{ periodLabel[stats.period] }}
+            </h2>
+
+            <div class="stats grid gap-8 lg:grid-cols-5">
+                <DashboardStat
+                    :stat="stats.fiscal.revenue"
+                    format="currency"
+                    label="Revenue"
+                >
+                    <template #extras>
+                        <span class="text-sm text-muted-foreground">
+                            {{ stats.fiscal.orders }} completed orders
+                        </span>
+                    </template>
+                </DashboardStat>
+
+                <DashboardStat
+                    :stat="stats.fiscal.cogs"
+                    format="currency"
+                    label="COGS"
+                    variant="danger"
+                />
+
+                <DashboardStat
+                    :stat="stats.fiscal.gross_profit"
+                    format="currency"
+                    label="Gross Profit"
+                    variant="success"
+                />
+
+                <DashboardStat
+                    :stat="stats.fiscal.margin"
+                    format="percent"
+                    label="Gross Margin"
+                />
+
+                <DashboardStat
+                    :stat="stats.fiscal.aov"
+                    format="currency"
+                    label="AOV / ATV"
+                />
+            </div>
+        </section>
+
+        <section class="grid lg:grid-cols-2 gap-8">
+            <div class="bg-background p-4 rounded-lg border border-border">
+                <h3 class="text-sm font-medium mb-3">
+                    Top products - {{ periodLabel[stats.period] }}
+                </h3>
+                <ul class="space-y-2 text-sm">
+                    <li
+                        v-for="(product, i) in stats.top_products"
+                        :key="product.id"
+                        class="flex items-center justify-between gap-3 py-1.5 border-b border-border/50 last:border-0"
+                    >
+                        <div class="flex items-center gap-2 min-w-0">
+                            <span class="text-muted-foreground w-4">{{ i + 1 }}.</span>
+                            <span class="truncate">{{ product.name }}</span>
+                        </div>
+                        <div class="text-right shrink-0">
+                            <div class="font-medium">{{ fmtCurrency(product.revenue) }}</div>
+                            <div class="text-xs text-muted-foreground">
+                                {{ product.qty }} sold
+                            </div>
+                        </div>
+                    </li>
+                    <li
+                        v-if="stats.top_products.length === 0"
+                        class="text-sm text-muted-foreground py-2"
+                    >
+                        No sales in this period.
+                    </li>
+                </ul>
             </div>
         </section>
 
@@ -137,93 +346,29 @@ const pieChartOptions = {
             <h2 class="mb-4 font-medium">Platform Statistics</h2>
             
             <div class="stats grid gap-8 lg:grid-cols-6">
-                <DashboardStat :stat="stats.total_users" label="Users">
+                <DashboardStat :stat="stats.counts.total_users" label="Users">
                     <template #extras>
                         <span class="text-sm text-muted-foreground">
-                            {{ stats.total_admins }} Admins & {{ stats.total_cashiers }} Cashiers
+                            {{ stats.counts.total_admins }} Admins & {{ stats.counts.total_cashiers }} Cashiers
                         </span>
                     </template>
                 </DashboardStat>
 
-                <DashboardStat :stat="stats.total_orders" label="Orders">
+                <DashboardStat :stat="stats.counts.total_orders" label="Orders">
                     <template #extras>
                         <span class="text-sm text-muted-foreground">
-                            {{ stats.orders_need_attention }} need attention
+                            {{ stats.counts.orders_need_attention }} need attention
                         </span>
                     </template>
                 </DashboardStat>
 
-                <DashboardStat :stat="stats.total_products" label="Products">
+                <DashboardStat :stat="stats.counts.total_products" label="Products">
                     <template #extras>
                         <span class="text-sm text-muted-foreground">
-                            {{ stats.total_product_categories }} Categories
+                            {{ stats.counts.total_product_categories }} Categories
                         </span>
                     </template>
                 </DashboardStat>
-            </div>
-        </section>
-
-        <section class="financial-stats-wrapper">
-            <h2 class="mb-4 font-medium">Fiscal Overview</h2>
-
-            <div class="stats grid gap-8 lg:grid-cols-5">
-                <DashboardStat :stat="stats.total_revenue" label="Total Revenue">
-                    <template #extras>
-                        <span class="text-sm text-muted-foreground">
-                            All sales at full price
-                        </span>
-                    </template>
-                </DashboardStat>
-
-                <DashboardStat :stat="stats.total_cogs" label="Total COGS" variant="danger">
-                    <template #extras>
-                        <span class="text-sm text-muted-foreground">
-                            Total Cost of Goods
-                        </span>
-                    </template>
-                </DashboardStat>
-
-                <DashboardStat :stat="stats.total_gross_profit" label="Gross Profit" variant="success">
-                    <template #extras>
-                        <span class="text-sm text-muted-foreground">
-                            All sales minus cost of goods
-                        </span>
-                    </template>
-                </DashboardStat>
-
-                <DashboardStat :stat="stats.gross_profit_margin" format="percent" label="Gross Profit Margin">
-                    <template #extras>
-                        <span class="text-sm text-muted-foreground">
-                            Percentage of revenue kept after COGS
-                        </span>
-                    </template>
-                </DashboardStat>
-
-                <DashboardStat :stat="stats.aov" format="currency" label="AOV / ATV">
-                    <template #extras>
-                        <span class="text-sm text-muted-foreground">
-                            Average Order Value
-                        </span>
-                    </template>
-                </DashboardStat>
-            </div>
-        </section>
-
-        <section class="charts-wrapper grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <!-- Line Chart (Spans 2 columns) -->
-            <div class="chart-card bg-background p-4 rounded-lg border border-border lg:col-span-2 h-80">
-                <h3 class="text-sm font-medium mb-2">Sales Performance in Ksh. ({{ new Date().getFullYear() }})</h3>
-                <div class="h-65">
-                    <Line :data="lineChartData" :options="lineChartOptions" style="height: 100%!important; width: 100%!important;" />
-                </div>
-            </div>
-
-            <!-- Pie Chart (Spans 1 column) -->
-            <div class="chart-card bg-background p-4 rounded-lg border border-border h-80">
-                <h3 class="text-sm font-medium mb-2">Payment Methods</h3>
-                <div class="h-65">
-                    <Pie :data="pieChartData" :options="pieChartOptions" style="height: 100%!important; width:100%!important" />
-                </div>
             </div>
         </section>
     </div>
