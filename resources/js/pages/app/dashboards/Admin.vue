@@ -152,7 +152,6 @@ const fmtPct = (n: number | null) =>
     <Head title="Admin Dashboard" />
 
     <div class="Dashboard space-y-8">
-        <!-- Header -->
         <section class="header">
             <div class="flex items-center gap-4">
                 <p>Hi {{ user.name }}</p>
@@ -162,7 +161,6 @@ const fmtPct = (n: number | null) =>
             </div>
         </section>
 
-        <!-- Tier 1 — Glance zone -->
         <section class="glance">
             <h2 class="mb-4 font-medium">Today at a glance</h2>
             <div class="stats grid gap-6 md:grid-cols-2 lg:grid-cols-4">
@@ -222,8 +220,7 @@ const fmtPct = (n: number | null) =>
             </div>
         </section>
 
-        <!-- Period toggle -->
-        <section class="flex items-center justify-between">
+        <section class="flex flex-col lg:flex-row gap-4 lg:items-center lg:justify-between">
             <h2 class="font-medium">Performance</h2>
             <div class="flex gap-1 p-1 bg-muted rounded-md">
                 <button
@@ -241,11 +238,10 @@ const fmtPct = (n: number | null) =>
             </div>
         </section>
 
-        <!-- Tier 2 + 3 — Trend + breakdowns -->
         <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div class="lg:col-span-2 bg-background p-4 rounded-lg border border-border h-80">
                 <h3 class="text-sm font-medium mb-2">
-                    Sales trend — {{ periodLabel[stats.period] }}
+                    Sales trend - {{ periodLabel[stats.period] }}
                 </h3>
                 <div class="h-65">
                     <Line
@@ -268,56 +264,56 @@ const fmtPct = (n: number | null) =>
             </div>
         </section>
 
-        <!-- Tier 4 — Fiscal for the selected period + top products -->
-        <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div class="lg:col-span-2">
-                <h2 class="mb-4 font-medium">
-                    Fiscal snapshot — {{ periodLabel[stats.period] }}
-                </h2>
-                <div class="stats grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-                    <DashboardStat
-                        :stat="stats.fiscal.revenue"
-                        format="currency"
-                        label="Revenue"
-                    >
-                        <template #extras>
-                            <span class="text-sm text-muted-foreground">
-                                {{ stats.fiscal.orders }} completed orders
-                            </span>
-                        </template>
-                    </DashboardStat>
+        <section class="stats-wrapper">
+            <h2 class="mb-4 font-medium">
+                Fiscal snapshot - {{ periodLabel[stats.period] }}
+            </h2>
 
-                    <DashboardStat
-                        :stat="stats.fiscal.cogs"
-                        format="currency"
-                        label="COGS"
-                        variant="danger"
-                    />
+            <div class="stats grid gap-8 lg:grid-cols-5">
+                <DashboardStat
+                    :stat="stats.fiscal.revenue"
+                    format="currency"
+                    label="Revenue"
+                >
+                    <template #extras>
+                        <span class="text-sm text-muted-foreground">
+                            {{ stats.fiscal.orders }} completed orders
+                        </span>
+                    </template>
+                </DashboardStat>
 
-                    <DashboardStat
-                        :stat="stats.fiscal.gross_profit"
-                        format="currency"
-                        label="Gross Profit"
-                        variant="success"
-                    />
+                <DashboardStat
+                    :stat="stats.fiscal.cogs"
+                    format="currency"
+                    label="COGS"
+                    variant="danger"
+                />
 
-                    <DashboardStat
-                        :stat="stats.fiscal.margin"
-                        format="percent"
-                        label="Gross Margin"
-                    />
+                <DashboardStat
+                    :stat="stats.fiscal.gross_profit"
+                    format="currency"
+                    label="Gross Profit"
+                    variant="success"
+                />
 
-                    <DashboardStat
-                        :stat="stats.fiscal.aov"
-                        format="currency"
-                        label="AOV / ATV"
-                    />
-                </div>
+                <DashboardStat
+                    :stat="stats.fiscal.margin"
+                    format="percent"
+                    label="Gross Margin"
+                />
+
+                <DashboardStat
+                    :stat="stats.fiscal.aov"
+                    format="currency"
+                    label="AOV / ATV"
+                />
             </div>
+        </section>
 
+        <section class="grid lg:grid-cols-2 gap-8">
             <div class="bg-background p-4 rounded-lg border border-border">
                 <h3 class="text-sm font-medium mb-3">
-                    Top products — {{ periodLabel[stats.period] }}
+                    Top products - {{ periodLabel[stats.period] }}
                 </h3>
                 <ul class="space-y-2 text-sm">
                     <li
@@ -346,20 +342,34 @@ const fmtPct = (n: number | null) =>
             </div>
         </section>
 
-        <!-- Compact platform counts — one row, not a section -->
-        <section class="flex flex-wrap gap-3 text-sm text-muted-foreground">
-            <span class="px-3 py-1 bg-muted rounded-full">
-                {{ stats.counts.total_users }} users
-                ({{ stats.counts.total_admins }} admins,
-                {{ stats.counts.total_cashiers }} cashiers)
-            </span>
-            <span class="px-3 py-1 bg-muted rounded-full">
-                {{ stats.counts.total_products }} products
-                ({{ stats.counts.total_product_categories }} categories)
-            </span>
-            <span class="px-3 py-1 bg-muted rounded-full">
-                {{ stats.counts.total_orders }} orders all-time
-            </span>
+        <section class="stats-wrapper">
+            <h2 class="mb-4 font-medium">Platform Statistics</h2>
+            
+            <div class="stats grid gap-8 lg:grid-cols-6">
+                <DashboardStat :stat="stats.counts.total_users" label="Users">
+                    <template #extras>
+                        <span class="text-sm text-muted-foreground">
+                            {{ stats.counts.total_admins }} Admins & {{ stats.counts.total_cashiers }} Cashiers
+                        </span>
+                    </template>
+                </DashboardStat>
+
+                <DashboardStat :stat="stats.counts.total_orders" label="Orders">
+                    <template #extras>
+                        <span class="text-sm text-muted-foreground">
+                            {{ stats.counts.orders_need_attention }} need attention
+                        </span>
+                    </template>
+                </DashboardStat>
+
+                <DashboardStat :stat="stats.counts.total_products" label="Products">
+                    <template #extras>
+                        <span class="text-sm text-muted-foreground">
+                            {{ stats.counts.total_product_categories }} Categories
+                        </span>
+                    </template>
+                </DashboardStat>
+            </div>
         </section>
     </div>
 </template>
