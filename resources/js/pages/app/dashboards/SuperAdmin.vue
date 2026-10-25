@@ -62,9 +62,22 @@ interface Stats {
         total_orders: number;
         orders_need_attention: number;
     };
+
+    system?: SystemStats;
 }
 
-const props = defineProps<{ stats: Stats }>();
+interface SystemStats {
+    app: { name: string; env: string; debug: boolean; url: string; timezone: string };
+    versions: { laravel: string; php: string; sapi: string };
+    runtime: { memory_usage: number; memory_peak: number; opcache: boolean };
+    packages: Record<string, string>;
+    server: { os: string; software: string | null };
+    database: { ok: boolean; driver: string; ping_ms?: number; error?: string };
+}
+
+const props = defineProps<{ 
+    stats: Stats;
+}>();
 
 const periodLabel: Record<Period, string> = {
     today: 'Today',
@@ -370,6 +383,71 @@ const fmtPct = (n: number | null) =>
                     </template>
                 </DashboardStat>
             </div>
+        </section>
+
+        <section v-if="stats.system" class="space-y-4">
+            <h2 class="font-medium">System</h2>
+
+            <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+                <div class="bg-background p-4 rounded-lg border border-border">
+                    <p class="text-sm text-muted-foreground">Laravel</p>
+                    <p class="text-2xl font-semibold mt-1">{{ stats.system.versions.laravel }}</p>
+                    <p class="text-xs text-muted-foreground mt-1">
+                        PHP {{ stats.system.versions.php }} · {{ stats.system.versions.sapi }}
+                    </p>
+                </div>
+
+                <div class="bg-background p-4 rounded-lg border border-border">
+                    <p class="text-sm text-muted-foreground">Environment</p>
+                    <p class="text-2xl font-semibold mt-1 capitalize">{{ stats.system.app.env }}</p>
+                    <p class="text-xs mt-1"
+                    :class="stats.system.app.debug ? 'text-amber-600' : 'text-muted-foreground'">
+                        Debug {{ stats.system.app.debug ? 'ON' : 'off' }}
+                    </p>
+                </div>
+
+                <div class="bg-background p-4 rounded-lg border border-border">
+                    <p class="text-sm text-muted-foreground">Database</p>
+                    <p class="text-2xl font-semibold mt-1"
+                    :class="stats.system.database.ok ? 'text-emerald-600' : 'text-red-600'">
+                        {{ stats.system.database.ok ? 'OK' : 'Down' }}
+                    </p>
+                    <p class="text-xs text-muted-foreground mt-1">
+                        {{ stats.system.database.driver }}
+                        <span v-if="stats.system.database.ping_ms">
+                            · {{ stats.system.database.ping_ms }}ms
+                        </span>
+                    </p>
+                </div>
+
+                <div class="bg-background p-4 rounded-lg border border-border">
+                    <p class="text-sm text-muted-foreground">Memory</p>
+                    <p class="text-2xl font-semibold mt-1">
+                        {{ (stats.system.runtime.memory_usage / 1024 / 1024).toFixed(1) }} MB
+                    </p>
+                    <p class="text-xs text-muted-foreground mt-1">
+                        Peak {{ (stats.system.runtime.memory_peak / 1024 / 1024).toFixed(1) }} MB
+                    </p>
+                </div>
+            </div>
+
+            <!-- Package versions -->
+            <div v-if="Object.keys(stats.system.packages).length" class="bg-background p-4 rounded-lg border border-border">
+                <h3 class="text-sm font-medium mb-2">Tracked packages</h3>
+                <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-1 text-sm">
+                    <div v-for="(version, name) in stats.system.packages" :key="name"
+                        class="flex justify-between gap-4 py-1 border-b border-border/50 last:border-0">
+                        <dt class="text-muted-foreground truncate">{{ name }}</dt>
+                        <dd class="font-mono shrink-0">{{ version }}</dd>
+                    </div>
+                </dl>
+            </div>
+
+            <!-- Server -->
+            <p class="text-xs text-muted-foreground">
+                {{ stats.system.server.os }}
+                <span v-if="stats.system.server.software"> · {{ stats.system.server.software }}</span>
+            </p>
         </section>
     </div>
 </template>

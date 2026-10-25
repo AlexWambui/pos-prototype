@@ -24,13 +24,19 @@ class DashboardController extends Controller
         $user = Auth::user();
 
         if (in_array($user->role, [UserRoles::SUPER_ADMIN, UserRoles::ADMIN], true)) {
-            $view = $user->role === UserRoles::SUPER_ADMIN
-                ? 'app/dashboards/SuperAdmin'
-                : 'app/dashboards/Admin';
+            $isSuper = $user->role === UserRoles::SUPER_ADMIN;
+            $view    = $isSuper ? 'app/dashboards/SuperAdmin' : 'app/dashboards/Admin';
+
+            $stats = $this->adminStats($request->query('period', 'month'));
+
+            // Only Super Admins get system stats; Admins never receive the payload.
+            if ($isSuper) {
+                $stats['system'] = $this->systemStats();
+            }
 
             return inertia($view, [
                 'user'  => $user,
-                'stats' => $this->adminStats($request->query('period', 'month')),
+                'stats' => $stats,
             ]);
         }
 
@@ -260,5 +266,78 @@ class DashboardController extends Controller
             ],
             'low_stock' => $lowStock,
         ];
+    }
+
+    private function systemStats(): array
+    {
+        $laravelVersion = app()->version();          // e.g. "11.31.0"
+        $phpVersion     = PHP_VERSION;               // e.g. "8.3.12"
+
+        // Composer lock gives exact installed package versions.
+        $composerLock = base_path('composer.lock');
+        $packages = [];
+        if (is_file($composerLock)) {
+            $lock = json_decode(file_get_contents($composerLock), true);
+            // Grab a few packages you actually care about.
+            $tracked = [
+                'laravel/framework', 
+                'inertiajs/inertia-laravel', 
+                'intervention/image'
+            ];
+            foreach ($lock['packages'] ?? [] as $pkg) {
+                if (in_array($pkg['name'], $tracked, true)) {
+                    $packages[$pkg['name']] = $pkg['version'];
+                }
+            }
+        }
+
+        return [
+            'app' => [
+                'name'        => config('app.name'),
+                'env'         => app()->environment(),          // "production", "local"
+                'debug'       => (bool) config('app.debug'),
+                'url'         => config('app.url'),
+                'timezone'    => config('app.timezone'),
+            ],
+            'versions' => [
+                'laravel' => $laravelVersion,
+                'php'     => $phpVersion,
+                'sapi'    => PHP_SAPI,                          // "fpm-fcgi", "cli-server"
+            ],
+            'runtime' => [
+                'memory_usage' => memory_get_usage(true),
+                'memory_peak'  => memory_get_peak_usage(true),
+                'opcache'      => function_exists('opcache_get_status')
+                    && (opcache_get_status(false)['opcache_enabled'] ?? false),
+            ],
+            'packages' => $packages,
+            'server' => [
+                'os'       => PHP_OS_FAMILY,                    // "Linux", "Darwin"
+                'software' => $_SERVER['SERVER_SOFTWARE'] ?? null,
+            ],
+            // Cheap DB health signal — time a trivial query.
+            'database' => $this->databaseHealth(),
+        ];
+    }
+
+    private function databaseHealth(): array
+    {
+        try {
+            $start = microtime(true);
+            DB::select('SELECT 1');
+            $ms = (microtime(true) - $start) * 1000;
+
+            return [
+                'ok'    => true,
+                'driver'=> DB::connection()->getDriverName(),
+                'ping_ms' => round($ms, 2),
+            ];
+        } catch (\Throwable $e) {
+            return [
+                'ok'     => false,
+                'driver' => DB::connection()->getDriverName(),
+                'error'  => $e->getMessage(),
+            ];
+        }
     }
 }
